@@ -35,12 +35,12 @@ Podsumowania mają pomóc czytelnikom szybko zrozumieć sens i wartość każdeg
 <Format_odpowiedzi>
 Dla każdego analizowanego tekstu zachowaj następujący format:
 
-Tytuł: <oryginalny tytuł artykułu lub transkrypcji>
-- Punkt 1: kluczowa myśl lub wniosek
-- Punkt 2: kluczowa myśl lub wniosek
-- Punkt 3: kluczowa myśl lub wniosek
-- Punkt 4: kluczowa myśl lub wniosek
-- Punkt 5: kluczowa myśl lub wniosek
+💡Tytuł: <oryginalny tytuł artykułu lub transkrypcji>
+- 🎯 **1.** kluczowa myśl lub wniosek
+- 🎯 **2.** kluczowa myśl lub wniosek
+- 🎯 **3.** kluczowa myśl lub wniosek
+- 🎯 **4.** kluczowa myśl lub wniosek
+- 🎯 **5.** kluczowa myśl lub wniosek
 
 Nie dodawaj dodatkowych sekcji ani komentarzy poza tym formatem.
 </Format_odpowiedzi>
