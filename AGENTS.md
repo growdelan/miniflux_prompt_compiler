@@ -28,16 +28,21 @@
 
 ## Co dodano na tym etapie
 - Minimalny klient Miniflux pobierający `unread` i logujący liczbę wpisów.
-- Wstrzykiwalny `fetcher` w `run()` dla testowalnosci.
-- Smoke test potwierdzajacy prosty przebieg end-to-end bez sieci.
+- Klasyfikacja linków (YouTube vs artykuł) z pominięciem `/shorts/`.
+- Ekstrakcja treści artykułów przez `https://r.jina.ai/<URL>` z retry i timeoutem.
+- Pobieranie transkrypcji YouTube z obsługą różnych wersji API biblioteki.
+- Wstrzykiwalne fetchery w `run()` oraz `process_entry()` dla testowalności.
+- Smoke test potwierdzający przebieg bez połączeń sieciowych.
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
 - Konfiguracja tokenu tylko przez `MINIFLUX_API_TOKEN` z `.env` lub srodowiska.
 - Endpoint przyjety w najprostszym wariancie: `/v1/entries?status=unread`.
+- YouTube: obsluga `get_transcript` (stare API) i `fetch` (nowe API) w `youtube_transcript_api`.
+- Jina: pusta odpowiedz traktowana jako porazka, pelna jako sukces niezaleznie od dlugosci.
 
 ## Czego nie robimy na tym etapie
-- Brak ekstrakcji tresci (Jina/YouTube), budowy promptu i schowka macOS.
+- Brak budowy finalnego promptu i kopiowania do schowka macOS.
 - Brak oznaczania wpisow jako `read`.
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
 
