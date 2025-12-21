@@ -10,7 +10,41 @@ from pathlib import Path
 from subprocess import CalledProcessError, run as run_process
 from urllib.parse import parse_qs, urlparse
 
-PLACEHOLDER_PROMPT = "<TU JEST PLACEHOLDER PROMPTU>"
+PROMPT = """
+<Cel>
+Twoim celem jest analiza listy artykułów oraz transkrypcji i stworzenie zwięzłych, blogowych podsumowań. Każdy tekst ma zostać przeanalizowany pod kątem kluczowych idei, wniosków i wartości dla czytelnika, a następnie podsumowany w przystępnej, blogowej formie.
+</Cel>
+
+<Instrukcje>
+- Wciel się w rolę **zawodowego blogera i redaktora treści**.
+- Otrzymasz listę materiałów, z których każdy ma format:
+  - `Tytuł: <tytuł>`
+  - `Treść: <pełna treść artykułu lub transkrypcji>`
+- Przeanalizuj **każdy artykuł i każdą transkrypcję osobno**.
+- Zidentyfikuj najważniejsze myśli, fakty, wnioski lub praktyczne wskazówki.
+- Dla każdego tekstu przygotuj **blogowe podsumowanie w dokładnie 5 punktach**.
+- Zachowaj jasny, przystępny i angażujący styl blogowy.
+- Unikaj dygresji i powtarzania treści źródłowej – skup się na esencji.
+- Nie dodawaj własnych tematów ani interpretacji wykraczających poza treść materiału.
+</Instrukcje>
+
+<Kontekst>
+Podsumowania mają pomóc czytelnikom szybko zrozumieć sens i wartość każdego artykułu lub transkrypcji bez czytania całości. Styl powinien być lekki, informacyjny i uporządkowany, odpowiedni dla bloga eksperckiego.
+</Kontekst>
+
+<Format_odpowiedzi>
+Dla każdego analizowanego tekstu zachowaj następujący format:
+
+Tytuł: <oryginalny tytuł artykułu lub transkrypcji>
+- Punkt 1: kluczowa myśl lub wniosek
+- Punkt 2: kluczowa myśl lub wniosek
+- Punkt 3: kluczowa myśl lub wniosek
+- Punkt 4: kluczowa myśl lub wniosek
+- Punkt 5: kluczowa myśl lub wniosek
+
+Nie dodawaj dodatkowych sekcji ani komentarzy poza tym formatem.
+</Format_odpowiedzi>
+"""
 
 
 def load_env(path: Path) -> dict[str, str]:
@@ -189,13 +223,19 @@ def build_prompt(items: list[dict[str, str]]) -> str:
     if not items:
         return ""
 
-    sections = [PLACEHOLDER_PROMPT]
+    sections: list[str] = []
     for item in items:
         title = item.get("title", "")
         content = item.get("content", "")
         section = f"---\n\nTytuł: {title}\nTreść:\n{content}"
         sections.append(section)
-    return "\n\n".join(sections)
+    items_block = "\n\n".join(sections)
+    return (
+        f"{PROMPT}\n\n"
+        "<lista_artykułów_i_transkrypcji>\n"
+        f"{items_block}\n"
+        "</lista_artykułów_i_transkrypcji>"
+    )
 
 
 def process_entry(
