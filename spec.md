@@ -43,7 +43,7 @@ Definition of Done: dziala klasyfikacja linkow; Jina z retry i timeoutem; YouTub
 Zakres: parser URL, integracje z Jina i `youtube_transcript_api`.
 
 ## Milestone 3: Prompt i oznaczanie `read`
-Cel: generowanie promptu i aktualizacja statusu wpisow.
+Cel: generowanie promptu i aktualizacja statusu wpisów.
 Definition of Done: poprawny format promptu; sukcesy trafiaja do promptu; wpisy sukcesu oznaczane jako `read`; schowek nadpisywany tylko przy co najmniej jednym sukcesie.
 Zakres: builder promptu, clipboard macOS, endpoint aktualizacji statusu.
 

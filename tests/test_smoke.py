@@ -1,6 +1,8 @@
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
+from unittest import mock
 
 from main import run
 
@@ -28,16 +30,65 @@ class SmokeTest(unittest.TestCase):
             def fake_youtube_fetcher(video_id: str) -> str:
                 return "transcript"
 
+            marked: list[int] = []
+
+            def fake_marker(base_url: str, token: str, entry_id: int) -> None:
+                marked.append(entry_id)
+
+            clipboard_values: list[str] = []
+
+            def fake_clipboard(text: str) -> None:
+                clipboard_values.append(text)
+
             output = run(
                 env_path=env_path,
                 environ={},
                 fetcher=fake_fetcher,
                 article_fetcher=fake_article_fetcher,
                 youtube_fetcher=fake_youtube_fetcher,
+                marker=fake_marker,
+                clipboard=fake_clipboard,
             )
 
         self.assertEqual(
             output, "Unread entries: 3; Success: 2; Failed: 0; Skipped: 1"
+        )
+        self.assertEqual(marked, [1, 2])
+        self.assertEqual(len(clipboard_values), 1)
+        self.assertIn("Tytuł: Artykul", clipboard_values[0])
+        self.assertIn("Treść:\ncontent", clipboard_values[0])
+
+
+class MarkReadFallbackTest(unittest.TestCase):
+    def test_mark_entry_read_falls_back_on_400(self) -> None:
+        from main import mark_entry_read
+
+        calls: list[tuple[str, str]] = []
+
+        class DummyResponse:
+            def __enter__(self) -> "DummyResponse":
+                return self
+
+            def __exit__(self, exc_type, exc, tb) -> None:
+                return None
+
+        def fake_urlopen(request, timeout=10):  # type: ignore[no-untyped-def]
+            calls.append((request.method, request.full_url))
+            if len(calls) == 1:
+                raise urllib.error.HTTPError(
+                    request.full_url, 400, "Bad Request", hdrs=None, fp=None
+                )
+            return DummyResponse()
+
+        with mock.patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            mark_entry_read("http://example.com", "token", 123)
+
+        self.assertEqual(
+            calls,
+            [
+                ("PUT", "http://example.com/v1/entries?status=read"),
+                ("POST", "http://example.com/v1/entries?status=read"),
+            ],
         )
 
 

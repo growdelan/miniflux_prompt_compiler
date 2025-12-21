@@ -31,6 +31,8 @@
 - Klasyfikacja linków (YouTube vs artykuł) z pominięciem `/shorts/`.
 - Ekstrakcja treści artykułów przez `https://r.jina.ai/<URL>` z retry i timeoutem.
 - Pobieranie transkrypcji YouTube z obsługą różnych wersji API biblioteki.
+- Oznaczanie wpisów jako `read` po sukcesie, z fallbackiem na różne warianty API.
+- Budowa promptu z placeholderem i kopiowanie do schowka macOS.
 - Wstrzykiwalne fetchery w `run()` oraz `process_entry()` dla testowalności.
 - Smoke test potwierdzający przebieg bez połączeń sieciowych.
 
@@ -40,10 +42,10 @@
 - Endpoint przyjety w najprostszym wariancie: `/v1/entries?status=unread`.
 - YouTube: obsluga `get_transcript` (stare API) i `fetch` (nowe API) w `youtube_transcript_api`.
 - Jina: pusta odpowiedz traktowana jako porazka, pelna jako sukces niezaleznie od dlugosci.
+- Oznaczanie `read`: probujemy kilka wariantow endpointu/metody, bo instalacje Miniflux moga sie roznic.
+- Clipboard: uzywamy `pbcopy` jako najprostszej integracji z macOS.
 
 ## Czego nie robimy na tym etapie
-- Brak budowy finalnego promptu i kopiowania do schowka macOS.
-- Brak oznaczania wpisow jako `read`.
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
 
 ## Configuration & Secrets
