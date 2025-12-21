@@ -246,6 +246,7 @@ def process_entry(
     title = str(entry.get("title", "")).strip()
     url = str(entry.get("url", "")).strip()
     if not url:
+        logging.info("Brak URL, pomijam wpis.")
         return False, None, None
 
     logging.info("Start: %s", title or url)

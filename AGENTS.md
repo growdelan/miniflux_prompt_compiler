@@ -35,6 +35,8 @@
 - Budowa promptu z tagami `<lista_artykułów_i_transkrypcji>...</lista_artykułów_i_transkrypcji>` i kopiowanie do schowka macOS.
 - Wstrzykiwalne fetchery w `run()` oraz `process_entry()` dla testowalności.
 - Smoke test potwierdzający przebieg bez połączeń sieciowych.
+- Testy jednostkowe dla klasyfikacji URL i budowy promptu.
+- Instrukcja uruchamiania i testów w `README.md`.
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
@@ -45,6 +47,7 @@
 - Oznaczanie `read`: probujemy kilka wariantow endpointu/metody, bo instalacje Miniflux moga sie roznic.
 - Clipboard: uzywamy `pbcopy` jako najprostszej integracji z macOS.
 - Prompt: lista wpisow zawsze zamknieta w dedykowanych tagach, by latwo ja wyodrebniac.
+- Testy: zostajemy przy `unittest`, bez dodatkowych frameworkow.
 
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.

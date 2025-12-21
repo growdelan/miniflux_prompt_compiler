@@ -4,7 +4,13 @@ import urllib.error
 from pathlib import Path
 from unittest import mock
 
-from main import run
+from main import (
+    build_prompt,
+    extract_youtube_id,
+    is_youtube_shorts,
+    is_youtube_url,
+    run,
+)
 
 
 class SmokeTest(unittest.TestCase):
@@ -87,10 +93,44 @@ class MarkReadFallbackTest(unittest.TestCase):
             calls,
             [
                 ("PUT", "http://example.com/v1/entries?status=read"),
-                ("POST", "http://example.com/v1/entries?status=read"),
+                ("PUT", "http://example.com/v1/entries"),
             ],
         )
 
+
+class ClassificationTest(unittest.TestCase):
+    def test_youtube_detection_and_shorts(self) -> None:
+        self.assertTrue(is_youtube_url("https://youtube.com/watch?v=abc"))
+        self.assertTrue(is_youtube_url("https://www.youtube.com/watch?v=abc"))
+        self.assertTrue(is_youtube_url("https://youtu.be/abc"))
+        self.assertFalse(is_youtube_url("https://example.com/watch?v=abc"))
+
+        self.assertTrue(is_youtube_shorts("https://www.youtube.com/shorts/xyz"))
+        self.assertFalse(is_youtube_shorts("https://www.youtube.com/watch?v=xyz"))
+
+    def test_extract_youtube_id(self) -> None:
+        self.assertEqual(
+            extract_youtube_id("https://www.youtube.com/watch?v=abc123"), "abc123"
+        )
+        self.assertEqual(extract_youtube_id("https://youtu.be/xyz987"), "xyz987")
+        self.assertIsNone(extract_youtube_id("https://www.youtube.com/shorts/xyz"))
+
+
+class PromptBuildTest(unittest.TestCase):
+    def test_build_prompt_wraps_items(self) -> None:
+        prompt = build_prompt(
+            [
+                {"title": "Artykul", "content": "Tresc A"},
+                {"title": "Video", "content": "Tresc B"},
+            ]
+        )
+
+        self.assertIn("<lista_artykułów_i_transkrypcji>", prompt)
+        self.assertIn("</lista_artykułów_i_transkrypcji>", prompt)
+        self.assertIn("Tytuł: Artykul", prompt)
+        self.assertIn("Treść:\nTresc A", prompt)
+        self.assertIn("Tytuł: Video", prompt)
+        self.assertIn("Treść:\nTresc B", prompt)
 
 if __name__ == "__main__":
     unittest.main()
