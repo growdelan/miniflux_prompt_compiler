@@ -11,9 +11,12 @@ class SmokeTest(unittest.TestCase):
             env_path = Path(tmpdir) / ".env"
             env_path.write_text("MINIFLUX_API_TOKEN=abc123\n", encoding="utf-8")
 
-            output = run(env_path=env_path, environ={})
+            def fake_fetcher(base_url: str, token: str) -> list[dict[str, object]]:
+                return [{"id": 1}, {"id": 2}]
 
-        self.assertEqual(output, "MINIFLUX_API_TOKEN length: 6")
+            output = run(env_path=env_path, environ={}, fetcher=fake_fetcher)
+
+        self.assertEqual(output, "Unread entries: 2")
 
 
 if __name__ == "__main__":
