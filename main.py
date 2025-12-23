@@ -12,37 +12,41 @@ from urllib.parse import parse_qs, urlparse
 
 PROMPT = """
 <Cel>
-Twoim celem jest analiza listy artykułów oraz transkrypcji i stworzenie zwięzłych, blogowych podsumowań. Każdy tekst ma zostać przeanalizowany pod kątem kluczowych idei, wniosków i wartości dla czytelnika, a następnie podsumowany w przystępnej, blogowej formie.
+Twoim celem jest dogłębna analiza listy artykułów oraz transkrypcji i stworzenie merytorycznych, blogowych podsumowań, które oddają sens i wartość treści, a nie tylko skrót faktów.
 </Cel>
 
 <Instrukcje>
-- Wciel się w rolę **zawodowego blogera i redaktora treści**.
+- Wciel się w rolę **doświadczonego blogera eksperckiego i redaktora technicznego**.
 - Otrzymasz listę materiałów, z których każdy ma format:
   - `Tytuł: <tytuł>`
   - `Treść: <pełna treść artykułu lub transkrypcji>`
-- Przeanalizuj **każdy artykuł i każdą transkrypcję osobno**.
-- Zidentyfikuj najważniejsze myśli, fakty, wnioski lub praktyczne wskazówki.
-- Dla każdego tekstu przygotuj **blogowe podsumowanie w dokładnie 5 punktach**.
-- Zachowaj jasny, przystępny i angażujący styl blogowy.
-- Unikaj dygresji i powtarzania treści źródłowej – skup się na esencji.
-- Nie dodawaj własnych tematów ani interpretacji wykraczających poza treść materiału.
+- Przeanalizuj **każdy materiał osobno**.
+- Zidentyfikuj kluczowe idee, problemy, rozwiązania i ich znaczenie.
+- Dla każdego tekstu przygotuj **dokładnie 5 punktów**.
+- Każdy punkt:
+  - ma być **rozwiniętym mini-akapitem (2–4 zdania)**,
+  - zaczynać się od krótkiej tezy,
+  - następnie wyjaśniać kontekst,
+  - oraz wskazywać, dlaczego jest to istotne dla czytelnika.
+- Styl ma być **blogowy, opisowy i podobny do podanego przykładu** – nie encyklopedyczny i nie skrótowy.
+- Unikaj parafrazowania całych fragmentów – skup się na syntezie i wnioskach.
+- Nie dodawaj własnych tematów ani spekulacji poza treścią źródłową.
 </Instrukcje>
 
 <Kontekst>
-Podsumowania mają pomóc czytelnikom szybko zrozumieć sens i wartość każdego artykułu lub transkrypcji bez czytania całości. Styl powinien być lekki, informacyjny i uporządkowany, odpowiedni dla bloga eksperckiego.
+Podsumowania mają pozwolić czytelnikowi zrozumieć temat bez czytania całości artykułu, ale jednocześnie oddać jego głębię, problemy i praktyczne konsekwencje. Każdy punkt powinien czytać się jak fragment wpisu blogowego.
 </Kontekst>
 
 <Format_odpowiedzi>
-Dla każdego analizowanego tekstu zachowaj następujący format:
+💡Tytuł: <oryginalny tytuł>
 
-💡Tytuł: <oryginalny tytuł artykułu lub transkrypcji>
-- 🎯 **1.** kluczowa myśl lub wniosek
-- 🎯 **2.** kluczowa myśl lub wniosek
-- 🎯 **3.** kluczowa myśl lub wniosek
-- 🎯 **4.** kluczowa myśl lub wniosek
-- 🎯 **5.** kluczowa myśl lub wniosek
+- 🎯 **1.** <rozwinięty akapit blogowy>
+- 🎯 **2.** <rozwinięty akapit blogowy>
+- 🎯 **3.** <rozwinięty akapit blogowy>
+- 🎯 **4.** <rozwinięty akapit blogowy>
+- 🎯 **5.** <rozwinięty akapit blogowy>
 
-Nie dodawaj dodatkowych sekcji ani komentarzy poza tym formatem.
+Nie dodawaj żadnych innych sekcji ani komentarzy.
 </Format_odpowiedzi>
 """
 
@@ -59,7 +63,7 @@ def load_env(path: Path) -> dict[str, str]:
         if "=" not in line:
             continue
         key, value = line.split("=", 1)
-        values[key.strip()] = value.strip().strip("\"").strip("'")
+        values[key.strip()] = value.strip().strip('"').strip("'")
     return values
 
 
@@ -77,7 +81,9 @@ def fetch_unread_entries(
 
     entries = payload.get("entries", [])
     if not isinstance(entries, list):
-        raise RuntimeError("Nieprawidlowy format odpowiedzi Miniflux (brak listy entries).")
+        raise RuntimeError(
+            "Nieprawidlowy format odpowiedzi Miniflux (brak listy entries)."
+        )
     return entries
 
 
@@ -136,7 +142,9 @@ def fetch_youtube_transcript(video_id: str, preferred_language: str = "en") -> s
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
     except ImportError as exc:
-        raise RuntimeError("Brak zaleznosci youtube_transcript_api w srodowisku.") from exc
+        raise RuntimeError(
+            "Brak zaleznosci youtube_transcript_api w srodowisku."
+        ) from exc
 
     try:
         # Decyzja: obslugujemy oba API (stare get_transcript i nowe fetch),
@@ -164,7 +172,9 @@ def fetch_youtube_transcript(video_id: str, preferred_language: str = "en") -> s
     return content
 
 
-def mark_entry_read(base_url: str, token: str, entry_id: int, timeout: int = 10) -> None:
+def mark_entry_read(
+    base_url: str, token: str, entry_id: int, timeout: int = 10
+) -> None:
     # Decyzja: probujemy kilka wariantow API (PUT/POST i inny endpoint),
     # bo instalacje Miniflux moga roznic sie obsluga tej operacji.
     attempts = [
