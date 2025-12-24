@@ -57,7 +57,6 @@
 
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
-- Brak faktycznej integracji Playwright i ekstrakcji przez przegladarke.
 - Brak detekcji paywalla i rozbudowanego czyszczenia tresci.
 - Brak automatycznej instalacji przegladarek Playwright.
 
