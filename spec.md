@@ -93,7 +93,7 @@ Cel: wygodne kopiowanie wielu promptow do schowka oraz opcja bez interakcji.
 Definition of Done: przy wielu promptach aplikacja informuje o liczbie i zakresach tokenow; w trybie interaktywnym kopiuje kolejno po Enter z komunikatem o etykiecie; `--no-interactive` wypisuje prompty do stdout bez oczekiwania.
 Zakres: obsluga wejscia uzytkownika, integracja z `pbcopy`, obsluga flag `--interactive/--no-interactive`.
 
-## Milestone 11: Rozszerzenie CLI dla kontroli tokenow
+## Milestone 11: Rozszerzenie CLI dla kontroli tokenow (zrealizowany)
 Cel: pelna kontrola limitu i wyboru tokenizerow przez CLI.
 Definition of Done: `--max-tokens` ustawia limit; `--tokenizer` wspiera `auto`, `tiktoken`, `approx`; parametry sa przekazywane do logiki tokenow i chunkowania.
 Zakres: parsing argumentow CLI, walidacja parametrow, dokumentacja w README.

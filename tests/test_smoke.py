@@ -10,6 +10,7 @@ from unittest import mock
 from main import (
     build_prompt,
     build_prompts_with_chunking,
+    count_tokens,
     extract_youtube_id,
     is_youtube_shorts,
     is_youtube_url,
@@ -148,6 +149,12 @@ class TokenLabelTest(unittest.TestCase):
         self.assertEqual(label_for_tokens(49_999), "GPT-Thinking")
         self.assertEqual(label_for_tokens(50_000), "CHUNKING")
 
+    def test_count_tokens_approx(self) -> None:
+        self.assertEqual(count_tokens("abcd", tokenizer="approx"), 1)
+        self.assertEqual(count_tokens("abcdefgh", tokenizer="approx"), 2)
+        with self.assertRaises(ValueError):
+            count_tokens("test", tokenizer="unknown")
+
 
 class PromptChunkingTest(unittest.TestCase):
     def test_build_prompts_with_chunking_splits_on_limit(self) -> None:
@@ -162,7 +169,7 @@ class PromptChunkingTest(unittest.TestCase):
         def fake_build_prompt(current):  # type: ignore[no-untyped-def]
             return "|".join(item["title"] for item in current)
 
-        def fake_count_tokens(text: str) -> int:
+        def fake_count_tokens(text: str, **kwargs) -> int:
             return len(text.split("|")) if text else 0
 
         with mock.patch.object(main, "build_prompt", side_effect=fake_build_prompt):
@@ -183,7 +190,7 @@ class PromptChunkingTest(unittest.TestCase):
         def fake_build_prompt(current):  # type: ignore[no-untyped-def]
             return "|".join(item["title"] for item in current)
 
-        def fake_count_tokens(text: str) -> int:
+        def fake_count_tokens(text: str, **kwargs) -> int:
             return 10 if "BIG" in text else len(text.split("|"))
 
         with mock.patch.object(main, "build_prompt", side_effect=fake_build_prompt):
