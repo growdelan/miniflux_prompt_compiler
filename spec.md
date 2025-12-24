@@ -83,7 +83,7 @@ Cel: wiarygodne liczenie tokenow i widoczna klasyfikacja promptu.
 Definition of Done: aplikacja liczy tokeny pojedynczego promptu; etykiety `GPT-Instant`, `GPT-Thinking`, `CHUNKING` sa wypisywane w stdout; fallback przyblizony jest logowany jako szacunek.
 Zakres: `count_tokens`, `label_for_tokens`, integracja z logami i stdout.
 
-## Milestone 9: Chunkowanie promptow po granicy wpisow
+## Milestone 9: Chunkowanie promptow po granicy wpisow (zrealizowany)
 Cel: automatyczne dzielenie promptu na wiele promptow bez ciecia tresci artykulow.
 Definition of Done: chunkowanie uruchamia sie po przekroczeniu `--max-tokens`; kazdy chunk miesci sie w limicie; pojedynczy wpis przekraczajacy limit jest pominiety z ostrzezeniem.
 Zakres: `build_prompts_with_chunking`, logika cofania ostatniego wpisu, zachowanie kolejnosci.

@@ -56,6 +56,7 @@ TOKEN_LABELS = (
     (32000, "GPT-Instant"),
     (50000, "GPT-Thinking"),
 )
+MAX_PROMPT_TOKENS = 50_000
 
 
 def count_tokens(text: str) -> int:
@@ -337,6 +338,38 @@ def build_prompt(items: list[dict[str, str]]) -> str:
     )
 
 
+def build_prompts_with_chunking(
+    items: list[dict[str, str]], max_tokens: int
+) -> list[str]:
+    prompts: list[str] = []
+    current: list[dict[str, str]] = []
+
+    for item in items:
+        current.append(item)
+        prompt = build_prompt(current)
+        if not prompt:
+            current.pop()
+            continue
+        if count_tokens(prompt) <= max_tokens:
+            continue
+
+        current.pop()
+        if current:
+            prompts.append(build_prompt(current))
+            current = [item]
+            prompt = build_prompt(current)
+            if prompt and count_tokens(prompt) <= max_tokens:
+                continue
+
+        logging.info("Item exceeds max token limit and was skipped")
+        current = []
+
+    if current:
+        prompts.append(build_prompt(current))
+
+    return prompts
+
+
 def process_entry(
     entry: dict[str, object],
     article_fetcher: Callable[[str], str],
@@ -434,19 +467,37 @@ def run(
         else:
             skipped += 1
 
-    prompt = build_prompt(processed_items)
+    prompts = build_prompts_with_chunking(processed_items, MAX_PROMPT_TOKENS)
     summary = (
         f"Unread entries: {len(entries)}; Success: {success}; "
         f"Failed: {failed}; Skipped: {skipped}"
     )
-    if prompt:
-        token_count = count_tokens(prompt)
+    if not prompts:
+        logging.info("Brak przetworzonych wpisow, schowek nie jest nadpisywany.")
+        return summary
+
+    if len(prompts) == 1:
+        token_count = count_tokens(prompts[0])
         label = label_for_tokens(token_count)
-        clipboard(prompt)
+        clipboard(prompts[0])
         return f"{summary}; Tokens: {token_count}; Label: {label}"
 
-    logging.info("Brak przetworzonych wpisow, schowek nie jest nadpisywany.")
-    return summary
+    logging.info("Chunking: wygenerowano %d promptow.", len(prompts))
+    for index, prompt in enumerate(prompts, start=1):
+        token_count = count_tokens(prompt)
+        label = label_for_tokens(token_count)
+        logging.info(
+            "Prompt %d/%d: %d tokenow - %s", index, len(prompts), token_count, label
+        )
+
+    clipboard(prompts[0])
+    logging.info("Skopiowano prompt 1/%d do schowka.", len(prompts))
+    first_tokens = count_tokens(prompts[0])
+    first_label = label_for_tokens(first_tokens)
+    return (
+        f"{summary}; Prompts: {len(prompts)}; "
+        f"Tokens: {first_tokens}; Label: {first_label}"
+    )
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:

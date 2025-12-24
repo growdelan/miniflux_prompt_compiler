@@ -43,6 +43,9 @@
 - Flaga CLI `--playwright` sterujaca trybem fallback oraz test potwierdzajacy jej przekazanie do `run()`.
 - Implementacja Playwright fallback dla artykulow (headless, 1 proba, 20 s timeout) oraz test uzycia fallbacku.
 - Logi dla Jina i Playwright (start/blad/sukces), wskazanie zrodla tresci oraz instrukcje uruchomienia fallbacku w README.
+- Chunkowanie promptow po granicy wpisow z pomijaniem wpisow przekraczajacych limit tokenow.
+- Logi podsumowujace liczbe promptow po chunkowaniu i tokeny dla kazdego z nich.
+- Testy logiki chunkowania (dzielenie i pomijanie zbyt duzego wpisu).
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
@@ -55,6 +58,8 @@
 - Prompt: lista wpisow zawsze zamknieta w dedykowanych tagach, by latwo ja wyodrebniac.
 - Tokenizer: `tiktoken` jest opcjonalny, a przy jego braku stosujemy przyblizone liczenie z logiem.
 - Progi etykiet tokenow sa zgodne z PRD (<32k, 32k–49,999, >=50k).
+- Chunkowanie jest deterministyczne, zachowuje kolejnosc wpisow i nie tnie tresci w srodku.
+- Wpis przekraczajacy limit tokenow jest pomijany z ostrzezeniem w logach.
 - Testy: zostajemy przy `unittest`, bez dodatkowych frameworkow.
 - Tryb fallback jest kontrolowany flaga `--playwright` i nie zmienia domyslnego zachowania bez tej flagi.
 - Playwright dziala synchronicznie i tylko jako fallback po bledzie Jiny.
@@ -63,7 +68,6 @@
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
 - Brak detekcji paywalla i rozbudowanego czyszczenia tresci.
-- Brak chunkowania promptow po granicy wpisow (MVP tokenowy bez dzielenia).
 - Brak trybu interaktywnego kopiowania wielu promptow.
 - Brak flag `--max-tokens` i `--tokenizer`.
 - Brak automatycznej instalacji przegladarek Playwright.

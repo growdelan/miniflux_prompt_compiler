@@ -7,6 +7,7 @@ from unittest import mock
 
 from main import (
     build_prompt,
+    build_prompts_with_chunking,
     extract_youtube_id,
     is_youtube_shorts,
     is_youtube_url,
@@ -144,6 +145,57 @@ class TokenLabelTest(unittest.TestCase):
         self.assertEqual(label_for_tokens(32_000), "GPT-Thinking")
         self.assertEqual(label_for_tokens(49_999), "GPT-Thinking")
         self.assertEqual(label_for_tokens(50_000), "CHUNKING")
+
+
+class PromptChunkingTest(unittest.TestCase):
+    def test_build_prompts_with_chunking_splits_on_limit(self) -> None:
+        import main
+
+        items = [
+            {"title": "A", "content": "X"},
+            {"title": "B", "content": "Y"},
+            {"title": "C", "content": "Z"},
+        ]
+
+        def fake_build_prompt(current):  # type: ignore[no-untyped-def]
+            return "|".join(item["title"] for item in current)
+
+        def fake_count_tokens(text: str) -> int:
+            return len(text.split("|")) if text else 0
+
+        with mock.patch.object(main, "build_prompt", side_effect=fake_build_prompt):
+            with mock.patch.object(main, "count_tokens", side_effect=fake_count_tokens):
+                prompts = build_prompts_with_chunking(items, max_tokens=2)
+
+        self.assertEqual(prompts, ["A|B", "C"])
+
+    def test_build_prompts_with_chunking_skips_oversize(self) -> None:
+        import main
+
+        items = [
+            {"title": "A", "content": "X"},
+            {"title": "BIG", "content": "Y"},
+            {"title": "B", "content": "Z"},
+        ]
+
+        def fake_build_prompt(current):  # type: ignore[no-untyped-def]
+            return "|".join(item["title"] for item in current)
+
+        def fake_count_tokens(text: str) -> int:
+            return 10 if "BIG" in text else len(text.split("|"))
+
+        with mock.patch.object(main, "build_prompt", side_effect=fake_build_prompt):
+            with mock.patch.object(main, "count_tokens", side_effect=fake_count_tokens):
+                with self.assertLogs(level="INFO") as logs:
+                    prompts = build_prompts_with_chunking(items, max_tokens=2)
+
+        self.assertEqual(prompts, ["A", "B"])
+        self.assertTrue(
+            any(
+                "Item exceeds max token limit and was skipped" in message
+                for message in logs.output
+            )
+        )
 
 
 class PlaywrightFlagTest(unittest.TestCase):
