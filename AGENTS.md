@@ -80,8 +80,8 @@
 - Brak automatycznej instalacji przegladarek Playwright.
 
 ## Aktualny stan
-- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompt + schowek, fallback Playwright (flaga `--playwright`) z logami.
-- co jest skonczone: roadmapa ze `spec.md` oznaczona jako zrealizowana.
+- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami.
+- co jest skonczone: milestone’y 0.5–11 z `spec.md` oznaczone jako zrealizowane.
 - co jest nastepne: brak kolejnego milestone’u; kolejne kroki po nowym PRD/ustaleniach.
 
 ## Configuration & Secrets
