@@ -33,6 +33,9 @@
 - Pobieranie transkrypcji YouTube z obsługą różnych wersji API biblioteki.
 - Oznaczanie wpisów jako `read` po sukcesie, z fallbackiem na różne warianty API.
 - Budowa promptu z tagami `<lista_artykułów_i_transkrypcji>...</lista_artykułów_i_transkrypcji>` i kopiowanie do schowka macOS.
+- Liczenie tokenów promptu oraz etykiety `GPT-Instant`, `GPT-Thinking`, `CHUNKING` w stdout.
+- Fallback do przybliżonego liczenia tokenów przy braku `tiktoken` z logiem ostrzegawczym.
+- Testy progów etykiet tokenów.
 - Wstrzykiwalne fetchery w `run()` oraz `process_entry()` dla testowalności.
 - Smoke test potwierdzający przebieg bez połączeń sieciowych.
 - Testy jednostkowe dla klasyfikacji URL i budowy promptu.
@@ -40,6 +43,15 @@
 - Flaga CLI `--playwright` sterujaca trybem fallback oraz test potwierdzajacy jej przekazanie do `run()`.
 - Implementacja Playwright fallback dla artykulow (headless, 1 proba, 20 s timeout) oraz test uzycia fallbacku.
 - Logi dla Jina i Playwright (start/blad/sukces), wskazanie zrodla tresci oraz instrukcje uruchomienia fallbacku w README.
+- Chunkowanie promptow po granicy wpisow z pomijaniem wpisow przekraczajacych limit tokenow.
+- Logi podsumowujace liczbe promptow po chunkowaniu i tokeny dla kazdego z nich.
+- Testy logiki chunkowania (dzielenie i pomijanie zbyt duzego wpisu).
+- Tryb interaktywny kopiowania promptow po Enter z komunikatami o tokenach i etykietach.
+- Tryb nieinteraktywny (`--no-interactive`) wypisujacy prompty do stdout.
+- Flagi CLI `--interactive` i `--no-interactive` oraz test trybu nieinteraktywnego.
+- Flagi CLI `--max-tokens` i `--tokenizer` z przekazaniem do logiki tokenow i chunkowania.
+- Obsluga tokenizerow `auto`, `tiktoken`, `approx` i testy liczenia przyblizonego.
+- Aktualizacja README o nowe flagi uruchomieniowe.
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
@@ -50,6 +62,13 @@
 - Oznaczanie `read`: probujemy kilka wariantow endpointu/metody, bo instalacje Miniflux moga sie roznic.
 - Clipboard: uzywamy `pbcopy` jako najprostszej integracji z macOS.
 - Prompt: lista wpisow zawsze zamknieta w dedykowanych tagach, by latwo ja wyodrebniac.
+- Tokenizer: `tiktoken` jest opcjonalny, a przy jego braku stosujemy przyblizone liczenie z logiem.
+- Progi etykiet tokenow sa zgodne z PRD (<32k, 32k–49,999, >=50k).
+- Chunkowanie jest deterministyczne, zachowuje kolejnosc wpisow i nie tnie tresci w srodku.
+- Wpis przekraczajacy limit tokenow jest pomijany z ostrzezeniem w logach.
+- Tryb interaktywny jest domyslny, a `--no-interactive` przechodzi na stdout bez kopiowania do schowka.
+- `--tokenizer tiktoken` wymaga obecnosci `tiktoken`; `auto` przechodzi na przyblizenie, `approx` wymusza szacunek.
+- Limit tokenow jest konfigurowalny przez `--max-tokens` i przekazywany do chunkowania.
 - Testy: zostajemy przy `unittest`, bez dodatkowych frameworkow.
 - Tryb fallback jest kontrolowany flaga `--playwright` i nie zmienia domyslnego zachowania bez tej flagi.
 - Playwright dziala synchronicznie i tylko jako fallback po bledzie Jiny.
@@ -61,8 +80,8 @@
 - Brak automatycznej instalacji przegladarek Playwright.
 
 ## Aktualny stan
-- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompt + schowek, fallback Playwright (flaga `--playwright`) z logami.
-- co jest skonczone: roadmapa ze `spec.md` oznaczona jako zrealizowana.
+- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami.
+- co jest skonczone: milestone’y 0.5–11 z `spec.md` oznaczone jako zrealizowane.
 - co jest nastepne: brak kolejnego milestone’u; kolejne kroki po nowym PRD/ustaleniach.
 
 ## Configuration & Secrets

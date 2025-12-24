@@ -52,6 +52,41 @@ Nie dodawaj żadnych innych sekcji ani komentarzy.
 </Format_odpowiedzi>
 """
 
+TOKEN_LABELS = (
+    (32000, "GPT-Instant"),
+    (50000, "GPT-Thinking"),
+)
+MAX_PROMPT_TOKENS = 50_000
+TOKENIZER_OPTIONS = {"auto", "tiktoken", "approx"}
+
+
+def count_tokens(text: str, tokenizer: str = "auto") -> int:
+    if tokenizer not in TOKENIZER_OPTIONS:
+        raise ValueError(f"Nieznany tokenizer: {tokenizer}")
+
+    if tokenizer in {"auto", "tiktoken"}:
+        try:
+            import tiktoken
+        except ImportError as exc:
+            if tokenizer == "tiktoken":
+                raise RuntimeError(
+                    "Tokenizer tiktoken nie jest dostepny w srodowisku."
+                ) from exc
+            logging.info("Tokenizer: approx (fallback, wynik szacunkowy)")
+            return max(1, len(text) // 4)
+        encoding = tiktoken.get_encoding("cl100k_base")
+        return len(encoding.encode(text))
+
+    logging.info("Tokenizer: approx (wynik szacunkowy)")
+    return max(1, len(text) // 4)
+
+
+def label_for_tokens(count: int) -> str:
+    for limit, label in TOKEN_LABELS:
+        if count < limit:
+            return label
+    return "CHUNKING"
+
 
 def load_env(path: Path) -> dict[str, str]:
     values: dict[str, str] = {}
@@ -314,6 +349,38 @@ def build_prompt(items: list[dict[str, str]]) -> str:
     )
 
 
+def build_prompts_with_chunking(
+    items: list[dict[str, str]], max_tokens: int, tokenizer: str = "auto"
+) -> list[str]:
+    prompts: list[str] = []
+    current: list[dict[str, str]] = []
+
+    for item in items:
+        current.append(item)
+        prompt = build_prompt(current)
+        if not prompt:
+            current.pop()
+            continue
+        if count_tokens(prompt, tokenizer=tokenizer) <= max_tokens:
+            continue
+
+        current.pop()
+        if current:
+            prompts.append(build_prompt(current))
+            current = [item]
+            prompt = build_prompt(current)
+            if prompt and count_tokens(prompt, tokenizer=tokenizer) <= max_tokens:
+                continue
+
+        logging.info("Item exceeds max token limit and was skipped")
+        current = []
+
+    if current:
+        prompts.append(build_prompt(current))
+
+    return prompts
+
+
 def process_entry(
     entry: dict[str, object],
     article_fetcher: Callable[[str], str],
@@ -352,6 +419,10 @@ def run(
     marker: Callable[[str, str, int], None] | None = None,
     clipboard: Callable[[str], None] | None = None,
     use_playwright: bool = False,
+    interactive: bool = True,
+    input_reader: Callable[[], str] | None = None,
+    max_tokens: int = MAX_PROMPT_TOKENS,
+    tokenizer: str = "auto",
 ) -> str:
     env = environ or os.environ
     file_env = load_env(env_path)
@@ -411,13 +482,56 @@ def run(
         else:
             skipped += 1
 
-    prompt = build_prompt(processed_items)
-    if prompt:
-        clipboard(prompt)
-    else:
+    full_prompt = build_prompt(processed_items)
+    prompts = build_prompts_with_chunking(
+        processed_items, max_tokens=max_tokens, tokenizer=tokenizer
+    )
+    summary = (
+        f"Unread entries: {len(entries)}; Success: {success}; "
+        f"Failed: {failed}; Skipped: {skipped}"
+    )
+    if not full_prompt or not prompts:
         logging.info("Brak przetworzonych wpisow, schowek nie jest nadpisywany.")
+        return summary
 
-    return f"Unread entries: {len(entries)}; Success: {success}; Failed: {failed}; Skipped: {skipped}"
+    total_tokens = count_tokens(full_prompt, tokenizer=tokenizer)
+    total_label = label_for_tokens(total_tokens)
+
+    if len(prompts) == 1:
+        if interactive:
+            clipboard(prompts[0])
+        else:
+            token_count = count_tokens(prompts[0], tokenizer=tokenizer)
+            label = label_for_tokens(token_count)
+            print(f"Prompt 1/1 ({token_count} tokenow - {label})")
+            print(prompts[0])
+        return f"{summary}; Tokens: {total_tokens}; Label: {total_label}"
+
+    print(f"Total tokens: {total_tokens} -> {total_label}")
+    print(f"Generated prompts: {len(prompts)}")
+    if interactive:
+        input_reader = input_reader or (lambda: input())
+        for index, prompt in enumerate(prompts, start=1):
+            print(f"Press [Enter] to copy prompt {index}/{len(prompts)}")
+            input_reader()
+            clipboard(prompt)
+            token_count = count_tokens(prompt, tokenizer=tokenizer)
+            label = label_for_tokens(token_count)
+            print(
+                f"Copied prompt {index}/{len(prompts)} "
+                f"({token_count} tokenow - {label})"
+            )
+    else:
+        for index, prompt in enumerate(prompts, start=1):
+            token_count = count_tokens(prompt, tokenizer=tokenizer)
+            label = label_for_tokens(token_count)
+            print(f"Prompt {index}/{len(prompts)} ({token_count} tokenow - {label})")
+            print(prompt)
+
+    return (
+        f"{summary}; Prompts: {len(prompts)}; "
+        f"Tokens: {total_tokens}; Label: {total_label}"
+    )
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
@@ -427,6 +541,32 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Wlacz fallback Playwright po bledzie Jiny.",
     )
+    interactive_group = parser.add_mutually_exclusive_group()
+    interactive_group.add_argument(
+        "--interactive",
+        action="store_true",
+        dest="interactive",
+        help="Wlacz tryb interaktywny kopiowania promptow.",
+    )
+    interactive_group.add_argument(
+        "--no-interactive",
+        action="store_false",
+        dest="interactive",
+        help="Wylacz tryb interaktywny (wypisz prompty do stdout).",
+    )
+    parser.set_defaults(interactive=True)
+    parser.add_argument(
+        "--max-tokens",
+        type=int,
+        default=MAX_PROMPT_TOKENS,
+        help="Maksymalna liczba tokenow na prompt (domyslnie 50000).",
+    )
+    parser.add_argument(
+        "--tokenizer",
+        choices=sorted(TOKENIZER_OPTIONS),
+        default="auto",
+        help="Wybor tokenizera: auto, tiktoken, approx.",
+    )
     return parser.parse_args(argv)
 
 
@@ -434,7 +574,12 @@ def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     try:
         args = parse_args(sys.argv[1:])
-        message = run(use_playwright=args.playwright)
+        message = run(
+            use_playwright=args.playwright,
+            interactive=args.interactive,
+            max_tokens=args.max_tokens,
+            tokenizer=args.tokenizer,
+        )
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1

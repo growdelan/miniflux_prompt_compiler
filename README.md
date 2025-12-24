@@ -24,6 +24,17 @@ Fallback Playwright po bledzie Jiny:
 uv run main.py --playwright
 ```
 
+Kontrola limitu tokenow i trybu liczenia:
+```sh
+uv run main.py --max-tokens 50000 --tokenizer auto
+uv run main.py --max-tokens 32000 --tokenizer approx
+```
+
+Tryb nieinteraktywny (wypisuje prompty do stdout):
+```sh
+uv run main.py --no-interactive
+```
+
 Instalacja przegladarek Playwright (wymagane przy uzyciu fallbacku):
 ```sh
 uv run playwright install
