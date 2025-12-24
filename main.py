@@ -1,6 +1,8 @@
+import argparse
 import json
 import logging
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -113,6 +115,7 @@ def extract_youtube_id(url: str) -> str | None:
 
 
 def fetch_article_markdown(url: str, timeout: int = 15, retries: int = 3) -> str:
+    logging.info("Jina: start")
     request_url = f"https://r.jina.ai/{url}"
     last_error: Exception | None = None
     for attempt in range(1, retries + 1):
@@ -136,6 +139,69 @@ def fetch_article_markdown(url: str, timeout: int = 15, retries: int = 3) -> str
         break
 
     raise RuntimeError(f"Nie udalo sie pobrac tresci artykulu: {last_error}")
+
+
+def fetch_article_with_fallback(
+    url: str,
+    use_playwright: bool,
+    fallback_fetcher: Callable[[str], str] | None = None,
+) -> str:
+    try:
+        content = fetch_article_markdown(url)
+        logging.info("Content source selected: jina")
+        return content
+    except RuntimeError as exc:
+        logging.info("Jina: error (%s)", exc)
+        if not use_playwright or fallback_fetcher is None:
+            raise
+        content = fallback_fetcher(url)
+        logging.info("Content source selected: playwright")
+        return content
+
+
+def fetch_article_with_playwright(url: str, timeout: int = 20) -> str:
+    try:
+        from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+        from playwright.sync_api import sync_playwright
+    except ImportError as exc:
+        raise RuntimeError("Brak zaleznosci playwright w srodowisku.") from exc
+
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            page = browser.new_page()
+            try:
+                logging.info("Playwright: start %s", url)
+                page.goto(url, wait_until="domcontentloaded", timeout=timeout * 1000)
+            except PlaywrightTimeoutError as exc:
+                logging.info("Playwright: failed (timeout)")
+                raise RuntimeError(f"Playwright timeout: {exc}") from exc
+
+            consent_pattern = re.compile(
+                r"^(accept|agree|accept all|i agree|zgadzam sie|akceptuj)$",
+                re.IGNORECASE,
+            )
+            try:
+                consent_button = page.get_by_role("button", name=consent_pattern)
+                if consent_button.count() > 0:
+                    consent_button.first.click(timeout=2000)
+                    logging.info("Playwright: cookie-consent clicked")
+            except Exception:
+                pass
+
+            content = page.evaluate(
+                "() => (document.body && document.body.innerText) || ''"
+            )
+            if not isinstance(content, str) or not content.strip():
+                logging.info("Playwright: failed (empty content)")
+                raise RuntimeError("Pusta tresc z Playwrighta.")
+            logging.info("Playwright: success (%d)", len(content))
+            return content
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        logging.info("Playwright: failed (%s)", exc)
+        raise RuntimeError(f"Nie udalo sie pobrac tresci Playwright: {exc}") from exc
 
 
 def fetch_youtube_transcript(video_id: str, preferred_language: str = "en") -> str:
@@ -285,6 +351,7 @@ def run(
     youtube_fetcher: Callable[[str], str] | None = None,
     marker: Callable[[str, str, int], None] | None = None,
     clipboard: Callable[[str], None] | None = None,
+    use_playwright: bool = False,
 ) -> str:
     env = environ or os.environ
     file_env = load_env(env_path)
@@ -298,7 +365,17 @@ def run(
     fetcher = fetcher or fetch_unread_entries
     entries = fetcher(base_url, token)
     logging.info("Pobrano %d wpisow unread.", len(entries))
-    article_fetcher = article_fetcher or fetch_article_markdown
+    if article_fetcher is None:
+        if use_playwright:
+            article_fetcher = lambda url: fetch_article_with_fallback(
+                url,
+                use_playwright=True,
+                fallback_fetcher=fetch_article_with_playwright,
+            )
+        else:
+            article_fetcher = lambda url: fetch_article_with_fallback(
+                url, use_playwright=False
+            )
     youtube_fetcher = youtube_fetcher or fetch_youtube_transcript
     marker = marker or mark_entry_read
     clipboard = clipboard or copy_to_clipboard
@@ -343,10 +420,21 @@ def run(
     return f"Unread entries: {len(entries)}; Success: {success}; Failed: {failed}; Skipped: {skipped}"
 
 
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Miniflux Prompt Compiler")
+    parser.add_argument(
+        "--playwright",
+        action="store_true",
+        help="Wlacz fallback Playwright po bledzie Jiny.",
+    )
+    return parser.parse_args(argv)
+
+
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     try:
-        message = run()
+        args = parse_args(sys.argv[1:])
+        message = run(use_playwright=args.playwright)
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1

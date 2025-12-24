@@ -132,5 +132,42 @@ class PromptBuildTest(unittest.TestCase):
         self.assertIn("Tytuł: Video", prompt)
         self.assertIn("Treść:\nTresc B", prompt)
 
+
+class PlaywrightFlagTest(unittest.TestCase):
+    def test_main_passes_playwright_flag(self) -> None:
+        import main
+
+        captured: dict[str, object] = {}
+
+        def fake_run(*args, **kwargs):  # type: ignore[no-untyped-def]
+            captured.update(kwargs)
+            return "ok"
+
+        with mock.patch.object(main, "run", side_effect=fake_run):
+            with mock.patch.object(main.sys, "argv", ["main.py", "--playwright"]):
+                exit_code = main.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(captured.get("use_playwright"))
+
+
+class PlaywrightFallbackTest(unittest.TestCase):
+    def test_fetch_article_with_fallback_uses_fallback(self) -> None:
+        import main
+
+        def fake_fallback(url: str) -> str:
+            return "fallback content"
+
+        with mock.patch.object(
+            main, "fetch_article_markdown", side_effect=RuntimeError("fail")
+        ):
+            content = main.fetch_article_with_fallback(
+                "https://example.com",
+                use_playwright=True,
+                fallback_fetcher=fake_fallback,
+            )
+
+        self.assertEqual(content, "fallback content")
+
 if __name__ == "__main__":
     unittest.main()
