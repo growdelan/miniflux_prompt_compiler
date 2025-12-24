@@ -408,6 +408,8 @@ def run(
     marker: Callable[[str, str, int], None] | None = None,
     clipboard: Callable[[str], None] | None = None,
     use_playwright: bool = False,
+    interactive: bool = True,
+    input_reader: Callable[[], str] | None = None,
 ) -> str:
     env = environ or os.environ
     file_env = load_env(env_path)
@@ -467,36 +469,53 @@ def run(
         else:
             skipped += 1
 
+    full_prompt = build_prompt(processed_items)
     prompts = build_prompts_with_chunking(processed_items, MAX_PROMPT_TOKENS)
     summary = (
         f"Unread entries: {len(entries)}; Success: {success}; "
         f"Failed: {failed}; Skipped: {skipped}"
     )
-    if not prompts:
+    if not full_prompt or not prompts:
         logging.info("Brak przetworzonych wpisow, schowek nie jest nadpisywany.")
         return summary
 
+    total_tokens = count_tokens(full_prompt)
+    total_label = label_for_tokens(total_tokens)
+
     if len(prompts) == 1:
-        token_count = count_tokens(prompts[0])
-        label = label_for_tokens(token_count)
-        clipboard(prompts[0])
-        return f"{summary}; Tokens: {token_count}; Label: {label}"
+        if interactive:
+            clipboard(prompts[0])
+        else:
+            token_count = count_tokens(prompts[0])
+            label = label_for_tokens(token_count)
+            print(f"Prompt 1/1 ({token_count} tokenow - {label})")
+            print(prompts[0])
+        return f"{summary}; Tokens: {total_tokens}; Label: {total_label}"
 
-    logging.info("Chunking: wygenerowano %d promptow.", len(prompts))
-    for index, prompt in enumerate(prompts, start=1):
-        token_count = count_tokens(prompt)
-        label = label_for_tokens(token_count)
-        logging.info(
-            "Prompt %d/%d: %d tokenow - %s", index, len(prompts), token_count, label
-        )
+    print(f"Total tokens: {total_tokens} -> {total_label}")
+    print(f"Generated prompts: {len(prompts)}")
+    if interactive:
+        input_reader = input_reader or (lambda: input())
+        for index, prompt in enumerate(prompts, start=1):
+            print(f"Press [Enter] to copy prompt {index}/{len(prompts)}")
+            input_reader()
+            clipboard(prompt)
+            token_count = count_tokens(prompt)
+            label = label_for_tokens(token_count)
+            print(
+                f"Copied prompt {index}/{len(prompts)} "
+                f"({token_count} tokenow - {label})"
+            )
+    else:
+        for index, prompt in enumerate(prompts, start=1):
+            token_count = count_tokens(prompt)
+            label = label_for_tokens(token_count)
+            print(f"Prompt {index}/{len(prompts)} ({token_count} tokenow - {label})")
+            print(prompt)
 
-    clipboard(prompts[0])
-    logging.info("Skopiowano prompt 1/%d do schowka.", len(prompts))
-    first_tokens = count_tokens(prompts[0])
-    first_label = label_for_tokens(first_tokens)
     return (
         f"{summary}; Prompts: {len(prompts)}; "
-        f"Tokens: {first_tokens}; Label: {first_label}"
+        f"Tokens: {total_tokens}; Label: {total_label}"
     )
 
 
@@ -507,6 +526,20 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Wlacz fallback Playwright po bledzie Jiny.",
     )
+    interactive_group = parser.add_mutually_exclusive_group()
+    interactive_group.add_argument(
+        "--interactive",
+        action="store_true",
+        dest="interactive",
+        help="Wlacz tryb interaktywny kopiowania promptow.",
+    )
+    interactive_group.add_argument(
+        "--no-interactive",
+        action="store_false",
+        dest="interactive",
+        help="Wylacz tryb interaktywny (wypisz prompty do stdout).",
+    )
+    parser.set_defaults(interactive=True)
     return parser.parse_args(argv)
 
 
@@ -514,7 +547,7 @@ def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     try:
         args = parse_args(sys.argv[1:])
-        message = run(use_playwright=args.playwright)
+        message = run(use_playwright=args.playwright, interactive=args.interactive)
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1

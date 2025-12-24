@@ -46,6 +46,9 @@
 - Chunkowanie promptow po granicy wpisow z pomijaniem wpisow przekraczajacych limit tokenow.
 - Logi podsumowujace liczbe promptow po chunkowaniu i tokeny dla kazdego z nich.
 - Testy logiki chunkowania (dzielenie i pomijanie zbyt duzego wpisu).
+- Tryb interaktywny kopiowania promptow po Enter z komunikatami o tokenach i etykietach.
+- Tryb nieinteraktywny (`--no-interactive`) wypisujacy prompty do stdout.
+- Flagi CLI `--interactive` i `--no-interactive` oraz test trybu nieinteraktywnego.
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
@@ -60,6 +63,7 @@
 - Progi etykiet tokenow sa zgodne z PRD (<32k, 32k–49,999, >=50k).
 - Chunkowanie jest deterministyczne, zachowuje kolejnosc wpisow i nie tnie tresci w srodku.
 - Wpis przekraczajacy limit tokenow jest pomijany z ostrzezeniem w logach.
+- Tryb interaktywny jest domyslny, a `--no-interactive` przechodzi na stdout bez kopiowania do schowka.
 - Testy: zostajemy przy `unittest`, bez dodatkowych frameworkow.
 - Tryb fallback jest kontrolowany flaga `--playwright` i nie zmienia domyslnego zachowania bez tej flagi.
 - Playwright dziala synchronicznie i tylko jako fallback po bledzie Jiny.
@@ -68,7 +72,6 @@
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
 - Brak detekcji paywalla i rozbudowanego czyszczenia tresci.
-- Brak trybu interaktywnego kopiowania wielu promptow.
 - Brak flag `--max-tokens` i `--tokenizer`.
 - Brak automatycznej instalacji przegladarek Playwright.
 

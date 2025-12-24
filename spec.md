@@ -88,7 +88,7 @@ Cel: automatyczne dzielenie promptu na wiele promptow bez ciecia tresci artykulo
 Definition of Done: chunkowanie uruchamia sie po przekroczeniu `--max-tokens`; kazdy chunk miesci sie w limicie; pojedynczy wpis przekraczajacy limit jest pominiety z ostrzezeniem.
 Zakres: `build_prompts_with_chunking`, logika cofania ostatniego wpisu, zachowanie kolejnosci.
 
-## Milestone 10: Tryb interaktywny i nieinteraktywny kopiowania
+## Milestone 10: Tryb interaktywny i nieinteraktywny kopiowania (zrealizowany)
 Cel: wygodne kopiowanie wielu promptow do schowka oraz opcja bez interakcji.
 Definition of Done: przy wielu promptach aplikacja informuje o liczbie i zakresach tokenow; w trybie interaktywnym kopiuje kolejno po Enter z komunikatem o etykiecie; `--no-interactive` wypisuje prompty do stdout bez oczekiwania.
 Zakres: obsluga wejscia uzytkownika, integracja z `pbcopy`, obsluga flag `--interactive/--no-interactive`.

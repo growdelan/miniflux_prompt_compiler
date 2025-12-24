@@ -1,7 +1,9 @@
+import io
 import re
 import tempfile
 import unittest
 import urllib.error
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -196,6 +198,65 @@ class PromptChunkingTest(unittest.TestCase):
                 for message in logs.output
             )
         )
+
+
+class InteractiveModeTest(unittest.TestCase):
+    def test_run_no_interactive_outputs_prompts(self) -> None:
+        import main
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text("MINIFLUX_API_TOKEN=abc123\n", encoding="utf-8")
+
+            def fake_fetcher(base_url: str, token: str) -> list[dict[str, object]]:
+                return [
+                    {"id": 1, "title": "Artykul", "url": "https://example.com/a"},
+                    {"id": 2, "title": "Video", "url": "https://youtu.be/abc123"},
+                ]
+
+            def fake_article_fetcher(url: str) -> str:
+                return "content"
+
+            def fake_youtube_fetcher(video_id: str) -> str:
+                return "transcript"
+
+            def fake_marker(base_url: str, token: str, entry_id: int) -> None:
+                return None
+
+            clipboard_values: list[str] = []
+
+            def fake_clipboard(text: str) -> None:
+                clipboard_values.append(text)
+
+            with mock.patch.object(
+                main, "build_prompts_with_chunking", return_value=["PROMPT1", "PROMPT2"]
+            ):
+                with mock.patch.object(
+                    main, "count_tokens", side_effect=[70_000, 10, 20]
+                ):
+                    buffer = io.StringIO()
+                    with redirect_stdout(buffer):
+                        output = run(
+                            env_path=env_path,
+                            environ={},
+                            fetcher=fake_fetcher,
+                            article_fetcher=fake_article_fetcher,
+                            youtube_fetcher=fake_youtube_fetcher,
+                            marker=fake_marker,
+                            clipboard=fake_clipboard,
+                            interactive=False,
+                        )
+
+        stdout = buffer.getvalue()
+        self.assertEqual(clipboard_values, [])
+        self.assertIn("Total tokens: 70000 -> CHUNKING", stdout)
+        self.assertIn("Generated prompts: 2", stdout)
+        self.assertIn("Prompt 1/2 (10 tokenow - GPT-Instant)", stdout)
+        self.assertIn("PROMPT1", stdout)
+        self.assertIn("Prompt 2/2 (20 tokenow - GPT-Instant)", stdout)
+        self.assertIn("PROMPT2", stdout)
+        self.assertIn("Prompts: 2", output)
+        self.assertIn("Label: CHUNKING", output)
 
 
 class PlaywrightFlagTest(unittest.TestCase):
