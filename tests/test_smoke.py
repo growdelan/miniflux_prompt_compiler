@@ -150,5 +150,24 @@ class PlaywrightFlagTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertTrue(captured.get("use_playwright"))
 
+
+class PlaywrightFallbackTest(unittest.TestCase):
+    def test_fetch_article_with_fallback_uses_fallback(self) -> None:
+        import main
+
+        def fake_fallback(url: str) -> str:
+            return "fallback content"
+
+        with mock.patch.object(
+            main, "fetch_article_markdown", side_effect=RuntimeError("fail")
+        ):
+            content = main.fetch_article_with_fallback(
+                "https://example.com",
+                use_playwright=True,
+                fallback_fetcher=fake_fallback,
+            )
+
+        self.assertEqual(content, "fallback content")
+
 if __name__ == "__main__":
     unittest.main()

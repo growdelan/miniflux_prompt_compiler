@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -150,6 +151,45 @@ def fetch_article_with_fallback(
         if not use_playwright or fallback_fetcher is None:
             raise
         return fallback_fetcher(url)
+
+
+def fetch_article_with_playwright(url: str, timeout: int = 20) -> str:
+    try:
+        from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
+        from playwright.sync_api import sync_playwright
+    except ImportError as exc:
+        raise RuntimeError("Brak zaleznosci playwright w srodowisku.") from exc
+
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(headless=True)
+            page = browser.new_page()
+            try:
+                page.goto(url, wait_until="domcontentloaded", timeout=timeout * 1000)
+            except PlaywrightTimeoutError as exc:
+                raise RuntimeError(f"Playwright timeout: {exc}") from exc
+
+            consent_pattern = re.compile(
+                r"^(accept|agree|accept all|i agree|zgadzam sie|akceptuj)$",
+                re.IGNORECASE,
+            )
+            try:
+                consent_button = page.get_by_role("button", name=consent_pattern)
+                if consent_button.count() > 0:
+                    consent_button.first.click(timeout=2000)
+            except Exception:
+                pass
+
+            content = page.evaluate(
+                "() => (document.body && document.body.innerText) || ''"
+            )
+            if not isinstance(content, str) or not content.strip():
+                raise RuntimeError("Pusta tresc z Playwrighta.")
+            return content
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        raise RuntimeError(f"Nie udalo sie pobrac tresci Playwright: {exc}") from exc
 
 
 def fetch_youtube_transcript(video_id: str, preferred_language: str = "en") -> str:
@@ -314,9 +354,16 @@ def run(
     entries = fetcher(base_url, token)
     logging.info("Pobrano %d wpisow unread.", len(entries))
     if article_fetcher is None:
-        article_fetcher = lambda url: fetch_article_with_fallback(
-            url, use_playwright=use_playwright
-        )
+        if use_playwright:
+            article_fetcher = lambda url: fetch_article_with_fallback(
+                url,
+                use_playwright=True,
+                fallback_fetcher=fetch_article_with_playwright,
+            )
+        else:
+            article_fetcher = lambda url: fetch_article_with_fallback(
+                url, use_playwright=False
+            )
     youtube_fetcher = youtube_fetcher or fetch_youtube_transcript
     marker = marker or mark_entry_read
     clipboard = clipboard or copy_to_clipboard
