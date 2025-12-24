@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import os
@@ -136,6 +137,19 @@ def fetch_article_markdown(url: str, timeout: int = 15, retries: int = 3) -> str
         break
 
     raise RuntimeError(f"Nie udalo sie pobrac tresci artykulu: {last_error}")
+
+
+def fetch_article_with_fallback(
+    url: str,
+    use_playwright: bool,
+    fallback_fetcher: Callable[[str], str] | None = None,
+) -> str:
+    try:
+        return fetch_article_markdown(url)
+    except RuntimeError:
+        if not use_playwright or fallback_fetcher is None:
+            raise
+        return fallback_fetcher(url)
 
 
 def fetch_youtube_transcript(video_id: str, preferred_language: str = "en") -> str:
@@ -285,6 +299,7 @@ def run(
     youtube_fetcher: Callable[[str], str] | None = None,
     marker: Callable[[str, str, int], None] | None = None,
     clipboard: Callable[[str], None] | None = None,
+    use_playwright: bool = False,
 ) -> str:
     env = environ or os.environ
     file_env = load_env(env_path)
@@ -298,7 +313,10 @@ def run(
     fetcher = fetcher or fetch_unread_entries
     entries = fetcher(base_url, token)
     logging.info("Pobrano %d wpisow unread.", len(entries))
-    article_fetcher = article_fetcher or fetch_article_markdown
+    if article_fetcher is None:
+        article_fetcher = lambda url: fetch_article_with_fallback(
+            url, use_playwright=use_playwright
+        )
     youtube_fetcher = youtube_fetcher or fetch_youtube_transcript
     marker = marker or mark_entry_read
     clipboard = clipboard or copy_to_clipboard
@@ -343,10 +361,21 @@ def run(
     return f"Unread entries: {len(entries)}; Success: {success}; Failed: {failed}; Skipped: {skipped}"
 
 
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Miniflux Prompt Compiler")
+    parser.add_argument(
+        "--playwright",
+        action="store_true",
+        help="Wlacz fallback Playwright po bledzie Jiny.",
+    )
+    return parser.parse_args(argv)
+
+
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     try:
-        message = run()
+        args = parse_args(sys.argv[1:])
+        message = run(use_playwright=args.playwright)
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1
