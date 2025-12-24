@@ -1,7 +1,7 @@
 # Specyfikacja techniczna
 
 ## Cel
-Aplikacja CLI w Pythonie (pojedynczy plik) pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekstraktuje treść artykułów lub transkrypcje YouTube, składa jeden prompt, kopiuje go do schowka macOS i oznacza jako przeczytane tylko wpisy przetworzone z sukcesem. Dodatkowo wspiera opcjonalny fallback Playwright dla artykułów, uruchamiany tylko po błędzie Jiny i po włączeniu flagi CLI.
+Aplikacja CLI w Pythonie (pojedynczy plik) pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekstraktuje treść artykułów lub transkrypcje YouTube, składa prompt (lub wiele promptow przy przekroczeniu limitu tokenow), kopiuje je do schowka macOS w trybie interaktywnym i oznacza jako przeczytane tylko wpisy przetworzone z sukcesem. Dodatkowo wspiera opcjonalny fallback Playwright dla artykułów, uruchamiany tylko po błędzie Jiny i po włączeniu flagi CLI.
 
 ## Architektura i przepływ danych
 1. Wczytanie konfiguracji z `.env` (token API), stałe w kodzie: URL Miniflux i placeholder promptu.
@@ -13,12 +13,20 @@ Aplikacja CLI w Pythonie (pojedynczy plik) pobiera wszystkie nieprzeczytane wpis
    - YouTube: `youtube_transcript_api` z preferencją `en`, bez timestampów; brak transkrypcji to porażka.
 5. Sukcesy trafiają do promptu, porażki są logowane i pozostają jako `unread`.
 6. Po każdym sukcesie wpis jest oznaczany jako `read` (pojedyncze ID).
-7. Finalny prompt kopiowany do schowka macOS tylko jeśli zawiera co najmniej jeden wpis.
+7. Prompt jest liczony tokenowo, etykietowany i w razie potrzeby dzielony na chunki na granicy calych artykulow.
+8. Finalne prompty sa kopiowane do schowka macOS w trybie interaktywnym (po Enter); w trybie nieinteraktywnym trafiaja do stdout.
+9. Etykiety na podstawie liczby tokenow:
+   - < 32 000: `GPT-Instant`
+   - 32 000 – 49 999: `GPT-Thinking`
+   - >= 50 000: `CHUNKING`
 
 ## Komponenty techniczne
 - Miniflux client: pobieranie wpisów i oznaczanie `read`.
 - Ekstraktor treści: obsługa Jina i YouTube, retry, timeouty; opcjonalny fallback Playwright dla artykułów.
 - Budowniczy promptu: placeholder + sekcje `Tytul:` i `Tresc:` z separatorem `---`.
+- Licznik tokenow: `tiktoken` gdy dostepny, z fallbackiem na przyblizenie.
+- Chunker promptow: dzieli tylko na granicy calych wpisow, z limitem `--max-tokens`.
+- Tryb interaktywny: sekwencyjne kopiowanie promptow do schowka po Enter.
 - Clipboard: kopiowanie do schowka macOS.
 - Logowanie: start/typ/sukces/blad/oznaczenie.
 
@@ -26,6 +34,7 @@ Aplikacja CLI w Pythonie (pojedynczy plik) pobiera wszystkie nieprzeczytane wpis
 - Brak async; przetwarzanie sekwencyjne.
 - Bledy pojedynczego wpisu nie przerywaja calego procesu.
 - Playwright nie wpływa na zachowanie bez flagi `--playwright`.
+- Chunkowanie uruchamia sie tylko po przekroczeniu limitu tokenow.
 
 # Roadmapa (milestones)
 
@@ -68,3 +77,23 @@ Zakres: uruchomienie przegladarki, `document.body.innerText`, best-effort klikni
 Cel: jasne logi i instrukcje uruchomienia nowej funkcji.
 Definition of Done: logi INFO zawieraja start i blad Jiny, start Playwrighta, sukces/porazke oraz zrodlo tresci; README opisuje zaleznosc `playwright` i `playwright install`.
 Zakres: komunikaty logow, aktualizacja README i opis wymagan.
+
+## Milestone 8: Liczenie tokenow i etykiety promptu (zrealizowany)
+Cel: wiarygodne liczenie tokenow i widoczna klasyfikacja promptu.
+Definition of Done: aplikacja liczy tokeny pojedynczego promptu; etykiety `GPT-Instant`, `GPT-Thinking`, `CHUNKING` sa wypisywane w stdout; fallback przyblizony jest logowany jako szacunek.
+Zakres: `count_tokens`, `label_for_tokens`, integracja z logami i stdout.
+
+## Milestone 9: Chunkowanie promptow po granicy wpisow
+Cel: automatyczne dzielenie promptu na wiele promptow bez ciecia tresci artykulow.
+Definition of Done: chunkowanie uruchamia sie po przekroczeniu `--max-tokens`; kazdy chunk miesci sie w limicie; pojedynczy wpis przekraczajacy limit jest pominiety z ostrzezeniem.
+Zakres: `build_prompts_with_chunking`, logika cofania ostatniego wpisu, zachowanie kolejnosci.
+
+## Milestone 10: Tryb interaktywny i nieinteraktywny kopiowania
+Cel: wygodne kopiowanie wielu promptow do schowka oraz opcja bez interakcji.
+Definition of Done: przy wielu promptach aplikacja informuje o liczbie i zakresach tokenow; w trybie interaktywnym kopiuje kolejno po Enter z komunikatem o etykiecie; `--no-interactive` wypisuje prompty do stdout bez oczekiwania.
+Zakres: obsluga wejscia uzytkownika, integracja z `pbcopy`, obsluga flag `--interactive/--no-interactive`.
+
+## Milestone 11: Rozszerzenie CLI dla kontroli tokenow
+Cel: pelna kontrola limitu i wyboru tokenizerow przez CLI.
+Definition of Done: `--max-tokens` ustawia limit; `--tokenizer` wspiera `auto`, `tiktoken`, `approx`; parametry sa przekazywane do logiki tokenow i chunkowania.
+Zakres: parsing argumentow CLI, walidacja parametrow, dokumentacja w README.

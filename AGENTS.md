@@ -33,6 +33,9 @@
 - Pobieranie transkrypcji YouTube z obsługą różnych wersji API biblioteki.
 - Oznaczanie wpisów jako `read` po sukcesie, z fallbackiem na różne warianty API.
 - Budowa promptu z tagami `<lista_artykułów_i_transkrypcji>...</lista_artykułów_i_transkrypcji>` i kopiowanie do schowka macOS.
+- Liczenie tokenów promptu oraz etykiety `GPT-Instant`, `GPT-Thinking`, `CHUNKING` w stdout.
+- Fallback do przybliżonego liczenia tokenów przy braku `tiktoken` z logiem ostrzegawczym.
+- Testy progów etykiet tokenów.
 - Wstrzykiwalne fetchery w `run()` oraz `process_entry()` dla testowalności.
 - Smoke test potwierdzający przebieg bez połączeń sieciowych.
 - Testy jednostkowe dla klasyfikacji URL i budowy promptu.
@@ -50,6 +53,8 @@
 - Oznaczanie `read`: probujemy kilka wariantow endpointu/metody, bo instalacje Miniflux moga sie roznic.
 - Clipboard: uzywamy `pbcopy` jako najprostszej integracji z macOS.
 - Prompt: lista wpisow zawsze zamknieta w dedykowanych tagach, by latwo ja wyodrebniac.
+- Tokenizer: `tiktoken` jest opcjonalny, a przy jego braku stosujemy przyblizone liczenie z logiem.
+- Progi etykiet tokenow sa zgodne z PRD (<32k, 32k–49,999, >=50k).
 - Testy: zostajemy przy `unittest`, bez dodatkowych frameworkow.
 - Tryb fallback jest kontrolowany flaga `--playwright` i nie zmienia domyslnego zachowania bez tej flagi.
 - Playwright dziala synchronicznie i tylko jako fallback po bledzie Jiny.
@@ -58,6 +63,9 @@
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
 - Brak detekcji paywalla i rozbudowanego czyszczenia tresci.
+- Brak chunkowania promptow po granicy wpisow (MVP tokenowy bez dzielenia).
+- Brak trybu interaktywnego kopiowania wielu promptow.
+- Brak flag `--max-tokens` i `--tokenizer`.
 - Brak automatycznej instalacji przegladarek Playwright.
 
 ## Aktualny stan

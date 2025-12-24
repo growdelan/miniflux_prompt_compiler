@@ -52,6 +52,29 @@ Nie dodawaj żadnych innych sekcji ani komentarzy.
 </Format_odpowiedzi>
 """
 
+TOKEN_LABELS = (
+    (32000, "GPT-Instant"),
+    (50000, "GPT-Thinking"),
+)
+
+
+def count_tokens(text: str) -> int:
+    try:
+        import tiktoken
+    except ImportError:
+        logging.info("Tokenizer: approx (fallback, wynik szacunkowy)")
+        return max(1, len(text) // 4)
+
+    encoding = tiktoken.get_encoding("cl100k_base")
+    return len(encoding.encode(text))
+
+
+def label_for_tokens(count: int) -> str:
+    for limit, label in TOKEN_LABELS:
+        if count < limit:
+            return label
+    return "CHUNKING"
+
 
 def load_env(path: Path) -> dict[str, str]:
     values: dict[str, str] = {}
@@ -412,12 +435,18 @@ def run(
             skipped += 1
 
     prompt = build_prompt(processed_items)
+    summary = (
+        f"Unread entries: {len(entries)}; Success: {success}; "
+        f"Failed: {failed}; Skipped: {skipped}"
+    )
     if prompt:
+        token_count = count_tokens(prompt)
+        label = label_for_tokens(token_count)
         clipboard(prompt)
-    else:
-        logging.info("Brak przetworzonych wpisow, schowek nie jest nadpisywany.")
+        return f"{summary}; Tokens: {token_count}; Label: {label}"
 
-    return f"Unread entries: {len(entries)}; Success: {success}; Failed: {failed}; Skipped: {skipped}"
+    logging.info("Brak przetworzonych wpisow, schowek nie jest nadpisywany.")
+    return summary
 
 
 def parse_args(argv: list[str]) -> argparse.Namespace:

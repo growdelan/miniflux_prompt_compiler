@@ -1,3 +1,4 @@
+import re
 import tempfile
 import unittest
 import urllib.error
@@ -9,6 +10,7 @@ from main import (
     extract_youtube_id,
     is_youtube_shorts,
     is_youtube_url,
+    label_for_tokens,
     run,
 )
 
@@ -56,9 +58,11 @@ class SmokeTest(unittest.TestCase):
                 clipboard=fake_clipboard,
             )
 
-        self.assertEqual(
-            output, "Unread entries: 3; Success: 2; Failed: 0; Skipped: 1"
+        self.assertIn(
+            "Unread entries: 3; Success: 2; Failed: 0; Skipped: 1", output
         )
+        self.assertRegex(output, r"Tokens: \d+")
+        self.assertIn("Label: GPT-Instant", output)
         self.assertEqual(marked, [1, 2])
         self.assertEqual(len(clipboard_values), 1)
         self.assertIn("Tytuł: Artykul", clipboard_values[0])
@@ -131,6 +135,15 @@ class PromptBuildTest(unittest.TestCase):
         self.assertIn("Treść:\nTresc A", prompt)
         self.assertIn("Tytuł: Video", prompt)
         self.assertIn("Treść:\nTresc B", prompt)
+
+
+class TokenLabelTest(unittest.TestCase):
+    def test_label_for_tokens_thresholds(self) -> None:
+        self.assertEqual(label_for_tokens(0), "GPT-Instant")
+        self.assertEqual(label_for_tokens(31_999), "GPT-Instant")
+        self.assertEqual(label_for_tokens(32_000), "GPT-Thinking")
+        self.assertEqual(label_for_tokens(49_999), "GPT-Thinking")
+        self.assertEqual(label_for_tokens(50_000), "CHUNKING")
 
 
 class PlaywrightFlagTest(unittest.TestCase):
