@@ -39,6 +39,7 @@
 - Instrukcja uruchamiania i testów w `README.md`.
 - Flaga CLI `--playwright` sterujaca trybem fallback oraz test potwierdzajacy jej przekazanie do `run()`.
 - Implementacja Playwright fallback dla artykulow (headless, 1 proba, 20 s timeout) oraz test uzycia fallbacku.
+- Logi dla Jina i Playwright (start/blad/sukces), wskazanie zrodla tresci oraz instrukcje uruchomienia fallbacku w README.
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
@@ -52,11 +53,13 @@
 - Testy: zostajemy przy `unittest`, bez dodatkowych frameworkow.
 - Tryb fallback jest kontrolowany flaga `--playwright` i nie zmienia domyslnego zachowania bez tej flagi.
 - Playwright dziala synchronicznie i tylko jako fallback po bledzie Jiny.
+- Logowanie operacyjne oparte o `logging.info`, bez dodatkowych narzedzi obserwowalnosci.
 
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
 - Brak faktycznej integracji Playwright i ekstrakcji przez przegladarke.
 - Brak detekcji paywalla i rozbudowanego czyszczenia tresci.
+- Brak automatycznej instalacji przegladarek Playwright.
 
 ## Configuration & Secrets
 - Nie przechowuj sekretów w repozytorium. Jeśli aplikacja będzie wymagać kluczy/API, trzymaj je w zmiennych środowiskowych i udokumentuj w README.

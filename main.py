@@ -115,6 +115,7 @@ def extract_youtube_id(url: str) -> str | None:
 
 
 def fetch_article_markdown(url: str, timeout: int = 15, retries: int = 3) -> str:
+    logging.info("Jina: start")
     request_url = f"https://r.jina.ai/{url}"
     last_error: Exception | None = None
     for attempt in range(1, retries + 1):
@@ -146,11 +147,16 @@ def fetch_article_with_fallback(
     fallback_fetcher: Callable[[str], str] | None = None,
 ) -> str:
     try:
-        return fetch_article_markdown(url)
-    except RuntimeError:
+        content = fetch_article_markdown(url)
+        logging.info("Content source selected: jina")
+        return content
+    except RuntimeError as exc:
+        logging.info("Jina: error (%s)", exc)
         if not use_playwright or fallback_fetcher is None:
             raise
-        return fallback_fetcher(url)
+        content = fallback_fetcher(url)
+        logging.info("Content source selected: playwright")
+        return content
 
 
 def fetch_article_with_playwright(url: str, timeout: int = 20) -> str:
@@ -165,8 +171,10 @@ def fetch_article_with_playwright(url: str, timeout: int = 20) -> str:
             browser = playwright.chromium.launch(headless=True)
             page = browser.new_page()
             try:
+                logging.info("Playwright: start %s", url)
                 page.goto(url, wait_until="domcontentloaded", timeout=timeout * 1000)
             except PlaywrightTimeoutError as exc:
+                logging.info("Playwright: failed (timeout)")
                 raise RuntimeError(f"Playwright timeout: {exc}") from exc
 
             consent_pattern = re.compile(
@@ -177,6 +185,7 @@ def fetch_article_with_playwright(url: str, timeout: int = 20) -> str:
                 consent_button = page.get_by_role("button", name=consent_pattern)
                 if consent_button.count() > 0:
                     consent_button.first.click(timeout=2000)
+                    logging.info("Playwright: cookie-consent clicked")
             except Exception:
                 pass
 
@@ -184,11 +193,14 @@ def fetch_article_with_playwright(url: str, timeout: int = 20) -> str:
                 "() => (document.body && document.body.innerText) || ''"
             )
             if not isinstance(content, str) or not content.strip():
+                logging.info("Playwright: failed (empty content)")
                 raise RuntimeError("Pusta tresc z Playwrighta.")
+            logging.info("Playwright: success (%d)", len(content))
             return content
     except RuntimeError:
         raise
     except Exception as exc:
+        logging.info("Playwright: failed (%s)", exc)
         raise RuntimeError(f"Nie udalo sie pobrac tresci Playwright: {exc}") from exc
 
 

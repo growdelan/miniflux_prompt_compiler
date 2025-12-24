@@ -5,6 +5,7 @@ Narzędzie, które automatycznie zamienia nieprzeczytane RSS-y i filmy z YouTube
 ## Wymagania
 - Python 3.13+
 - `uv`
+- `playwright` (opcjonalnie, tylko dla fallback)
 
 ## Konfiguracja
 Utworz `.env` w katalogu projektu:
@@ -16,6 +17,16 @@ MINIFLUX_API_TOKEN=...
 ## Uruchamianie
 ```sh
 uv run main.py
+```
+
+Fallback Playwright po bledzie Jiny:
+```sh
+uv run main.py --playwright
+```
+
+Instalacja przegladarek Playwright (wymagane przy uzyciu fallbacku):
+```sh
+uv run playwright install
 ```
 
 ## Testy
