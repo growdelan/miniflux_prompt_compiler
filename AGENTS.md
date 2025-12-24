@@ -61,5 +61,10 @@
 - Brak detekcji paywalla i rozbudowanego czyszczenia tresci.
 - Brak automatycznej instalacji przegladarek Playwright.
 
+## Aktualny stan
+- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompt + schowek, fallback Playwright (flaga `--playwright`) z logami.
+- co jest skonczone: roadmapa ze `spec.md` oznaczona jako zrealizowana.
+- co jest nastepne: brak kolejnego milestone’u; kolejne kroki po nowym PRD/ustaleniach.
+
 ## Configuration & Secrets
 - Nie przechowuj sekretów w repozytorium. Jeśli aplikacja będzie wymagać kluczy/API, trzymaj je w zmiennych środowiskowych i udokumentuj w README.
