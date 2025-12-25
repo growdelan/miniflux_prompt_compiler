@@ -51,6 +51,8 @@
 - Flagi CLI `--max-tokens` i `--tokenizer` z przekazaniem do logiki tokenow i chunkowania.
 - Obsluga tokenizerow `auto`, `tiktoken`, `approx` i testy liczenia przyblizonego.
 - Aktualizacja README o nowe flagi uruchomieniowe.
+- Rozbicie kodu na modul `core/`, `adapters/`, `app.py`, `cli.py`, `config.py` z zachowaniem logiki.
+- Cienki `main.py` jako wrapper i re-eksport funkcji dla kompatybilnosci testow i uruchomienia.
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
@@ -73,12 +75,16 @@
 - Tryb fallback jest kontrolowany flaga `--playwright` i nie zmienia domyslnego zachowania bez tej flagi.
 - Playwright dziala synchronicznie i tylko jako fallback po bledzie Jiny.
 - Logowanie operacyjne oparte o `logging.info`, bez dodatkowych narzedzi obserwowalnosci.
+- Struktura kodu jest rozdzielona na warstwy `core/` (czysta logika) i `adapters/` (I/O), z `app.py` jako orkiestracja.
+- `main.py` pozostaje kompatybilnym punktem wejscia i re-eksportem API dla testow.
 
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
 - Brak pelnego modelowania wszystkich pol odpowiedzi Miniflux (korzystamy tylko z wymaganych pol).
 - Brak detekcji paywalla i rozbudowanego czyszczenia tresci.
 - Brak automatycznej instalacji przegladarek Playwright.
+- Brak zmian w zachowaniu funkcjonalnym i logice biznesowej; refactor jest strukturalny.
+- Brak zmian w konfiguracji `MINIFLUX_BASE_URL` (etap 4 refactoru nie jest wykonywany).
 
 ## Aktualny stan
 - co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami.

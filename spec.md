@@ -97,3 +97,8 @@ Zakres: obsluga wejscia uzytkownika, integracja z `pbcopy`, obsluga flag `--inte
 Cel: pelna kontrola limitu i wyboru tokenizerow przez CLI.
 Definition of Done: `--max-tokens` ustawia limit; `--tokenizer` wspiera `auto`, `tiktoken`, `approx`; parametry sa przekazywane do logiki tokenow i chunkowania.
 Zakres: parsing argumentow CLI, walidacja parametrow, dokumentacja w README.
+
+## Milestone 12: Refactor - rozbicie na moduly (zrealizowany)
+Cel: uporzadkowanie struktury kodu bez zmiany zachowania funkcjonalnego.
+Definition of Done: logika podzielona na `core/`, `adapters/`, `app.py`, `cli.py`, `config.py`; `main.py` pozostaje kompatybilnym wrapperem; testy przechodza bez zmian funkcjonalnych.
+Zakres: przeniesienie funkcji z `main.py` do modułów oraz aktualizacja importow w testach.
