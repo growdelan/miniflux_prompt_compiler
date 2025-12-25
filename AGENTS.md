@@ -70,6 +70,8 @@
 - Kolorowanie etykiet `GPT-Instant` (zielony) i `GPT-Thinking` (zolty) w logach i stdout.
 - Czerwony komunikat o pominieciu wpisu przekraczajacego limit tokenow.
 - Aktualizacja testow pod kolory ANSI (strip kodow w asercjach).
+- Obsluga timeoutow z `urllib` w ekstrakcji Jiny (TimeoutError i socket.timeout) jako `ContentFetchError` z retry i fallbackiem.
+- Test, ze timeout z `urlopen` jest opakowany w `ContentFetchError`.
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
@@ -100,6 +102,7 @@
 - Komunikaty operacyjne sa logowane przez `logging`, a `print()` pozostaje tylko do wypisywania promptow w trybie `--no-interactive`.
 - Kolorowanie informacji realizowane przez kody ANSI bez dodatkowych zaleznosci.
 - Testy ignoruja kody ANSI, sprawdzajac tresc komunikatow.
+- Timeouty z `urllib` w Jina traktuja sie jak `ContentFetchError`, aby uruchomic retry i ewentualny fallback Playwright.
 
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
@@ -110,6 +113,7 @@
 - Brak walidacji ani normalizacji `MINIFLUX_BASE_URL` poza prostym `strip()`.
 - Brak wprowadzenia flag `--quiet` / `--verbose` (pozostawione na przyszlosc).
 - Brak przelacznika do wylaczenia kolorow w logach i stdout.
+- Brak zmiany polityki timeoutow i retry (np. brak exponential backoff).
 
 ## Aktualny stan
 - co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, kolorowe etykiety i ostrzezenia ANSI, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, konfiguracja `MINIFLUX_BASE_URL` (CLI/env/.env), wyjatki domenowe dla I/O, stabilne oznaczanie `read`, logowanie operacyjne przez `logging`.

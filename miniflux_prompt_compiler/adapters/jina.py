@@ -1,4 +1,5 @@
 import logging
+import socket
 import time
 import urllib.error
 import urllib.request
@@ -15,7 +16,7 @@ def fetch_article_markdown(url: str, timeout: int = 15, retries: int = 3) -> str
         try:
             with urllib.request.urlopen(request_url, timeout=timeout) as response:
                 content = response.read().decode("utf-8", errors="replace")
-        except urllib.error.URLError as exc:
+        except (urllib.error.URLError, TimeoutError, socket.timeout) as exc:
             last_error = exc
             if attempt < retries:
                 time.sleep(1)

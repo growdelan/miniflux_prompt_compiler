@@ -339,5 +339,17 @@ class PlaywrightFallbackTest(unittest.TestCase):
 
         self.assertEqual(content, "fallback content")
 
+
+class JinaTimeoutTest(unittest.TestCase):
+    def test_fetch_article_markdown_timeout_is_wrapped(self) -> None:
+        from miniflux_prompt_compiler.adapters import jina
+        from miniflux_prompt_compiler.types import ContentFetchError
+
+        with mock.patch.object(
+            jina.urllib.request, "urlopen", side_effect=TimeoutError("timeout")
+        ):
+            with self.assertRaises(ContentFetchError):
+                jina.fetch_article_markdown("https://example.com", retries=1)
+
 if __name__ == "__main__":
     unittest.main()
