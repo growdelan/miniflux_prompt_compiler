@@ -7,9 +7,7 @@
 - `tests/test_smoke.py` zawiera prosty smoke test dla minimalnego przebiegu.
 
 ## Build, Test, and Development Commands
-- `MINIFLUX_API_TOKEN=... python main.py` uruchamia aplikację i pobiera liczbę `unread`.
 - `python -m unittest discover -s tests` uruchamia smoke test.
-- Brak zdefiniowanych komend budowania lub uruchamiania środowiska wirtualnego; jeśli dodasz skrypty, opisz je tutaj.
 
 ## Coding Style & Naming Conventions
 - Projekt jest w Pythonie; trzymaj się stylu PEP 8.
