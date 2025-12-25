@@ -1,7 +1,7 @@
 # Specyfikacja techniczna
 
 ## Cel
-Aplikacja CLI w Pythonie (pojedynczy plik) pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekstraktuje treść artykułów lub transkrypcje YouTube, składa prompt (lub wiele promptow przy przekroczeniu limitu tokenow), kopiuje je do schowka macOS w trybie interaktywnym i oznacza jako przeczytane tylko wpisy przetworzone z sukcesem. Dodatkowo wspiera opcjonalny fallback Playwright dla artykułów, uruchamiany tylko po błędzie Jiny i po włączeniu flagi CLI.
+Aplikacja CLI w Pythonie pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekstraktuje treść artykułów lub transkrypcje YouTube, składa prompt (lub wiele promptow przy przekroczeniu limitu tokenow), kopiuje je do schowka macOS w trybie interaktywnym i oznacza jako przeczytane tylko wpisy przetworzone z sukcesem. Dodatkowo wspiera opcjonalny fallback Playwright dla artykułów, uruchamiany tylko po błędzie Jiny i po włączeniu flagi CLI.
 
 ## Architektura i przepływ danych
 1. Wczytanie konfiguracji z `.env` (token API), stałe w kodzie: URL Miniflux i placeholder promptu.
@@ -21,14 +21,12 @@ Aplikacja CLI w Pythonie (pojedynczy plik) pobiera wszystkie nieprzeczytane wpis
    - >= 50 000: `CHUNKING`
 
 ## Komponenty techniczne
-- Miniflux client: pobieranie wpisów i oznaczanie `read`.
-- Ekstraktor treści: obsługa Jina i YouTube, retry, timeouty; opcjonalny fallback Playwright dla artykułów.
-- Budowniczy promptu: placeholder + sekcje `Tytul:` i `Tresc:` z separatorem `---`.
-- Licznik tokenow: `tiktoken` gdy dostepny, z fallbackiem na przyblizenie.
-- Chunker promptow: dzieli tylko na granicy calych wpisow, z limitem `--max-tokens`.
-- Tryb interaktywny: sekwencyjne kopiowanie promptow do schowka po Enter.
-- Clipboard: kopiowanie do schowka macOS.
-- Logowanie: start/typ/sukces/blad/oznaczenie.
+- Warstwa CLI: `miniflux_prompt_compiler/cli.py` (parsowanie argumentow, `main()`).
+- Orkiestracja: `miniflux_prompt_compiler/app.py` (przeplyw, `run()`, `process_entry()`).
+- Core (bez I/O): `miniflux_prompt_compiler/core/` (prompt, tokeny, chunking, klasyfikacja URL).
+- Adapters (I/O): `miniflux_prompt_compiler/adapters/` (Miniflux HTTP, Jina, Playwright, YouTube, clipboard).
+- Kontrakty danych: `miniflux_prompt_compiler/types.py` (`MinifluxEntry`, `ProcessedItem`).
+- Konfiguracja: `miniflux_prompt_compiler/config.py` (wczytywanie `.env`).
 
 ## Uwagi implementacyjne
 - Brak async; przetwarzanie sekwencyjne.
