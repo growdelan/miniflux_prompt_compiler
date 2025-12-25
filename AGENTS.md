@@ -26,6 +26,7 @@
 
 ## Co dodano na tym etapie
 - Minimalny klient Miniflux pobierający `unread` i logujący liczbę wpisów.
+- Typy danych: `MinifluxEntry` (`TypedDict`) oraz `ProcessedItem` (`dataclass`) w `miniflux_prompt_compiler/types.py`.
 - Klasyfikacja linków (YouTube vs artykuł) z pominięciem `/shorts/`.
 - Ekstrakcja treści artykułów przez `https://r.jina.ai/<URL>` z retry i timeoutem.
 - Pobieranie transkrypcji YouTube z obsługą różnych wersji API biblioteki.
@@ -53,6 +54,7 @@
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
+- Typy `MinifluxEntry` i `ProcessedItem` centralizujemy w osobnym module, by ujednolicic sygnatury funkcji i uproscic testy.
 - Konfiguracja tokenu tylko przez `MINIFLUX_API_TOKEN` z `.env` lub srodowiska.
 - Endpoint przyjety w najprostszym wariancie: `/v1/entries?status=unread`.
 - YouTube: obsluga `get_transcript` (stare API) i `fetch` (nowe API) w `youtube_transcript_api`.
@@ -74,6 +76,7 @@
 
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
+- Brak pelnego modelowania wszystkich pol odpowiedzi Miniflux (korzystamy tylko z wymaganych pol).
 - Brak detekcji paywalla i rozbudowanego czyszczenia tresci.
 - Brak automatycznej instalacji przegladarek Playwright.
 
