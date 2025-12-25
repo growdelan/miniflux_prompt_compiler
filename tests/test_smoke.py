@@ -23,9 +23,15 @@ class SmokeTest(unittest.TestCase):
     def test_run_reads_token_from_env_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             env_path = Path(tmpdir) / ".env"
-            env_path.write_text("MINIFLUX_API_TOKEN=abc123\n", encoding="utf-8")
+            env_path.write_text(
+                "MINIFLUX_API_TOKEN=abc123\nMINIFLUX_BASE_URL=http://miniflux.local\n",
+                encoding="utf-8",
+            )
+
+            captured_base_urls: list[str] = []
 
             def fake_fetcher(base_url: str, token: str) -> list[dict[str, object]]:
+                captured_base_urls.append(base_url)
                 return [
                     {"id": 1, "title": "Artykul", "url": "https://example.com/a"},
                     {"id": 2, "title": "Video", "url": "https://youtu.be/abc123"},
@@ -71,6 +77,7 @@ class SmokeTest(unittest.TestCase):
         self.assertEqual(len(clipboard_values), 1)
         self.assertIn("Tytuł: Artykul", clipboard_values[0])
         self.assertIn("Treść:\ncontent", clipboard_values[0])
+        self.assertEqual(captured_base_urls, ["http://miniflux.local"])
 
 
 class MarkReadFallbackTest(unittest.TestCase):
@@ -284,6 +291,24 @@ class PlaywrightFlagTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertTrue(captured.get("use_playwright"))
+
+    def test_main_passes_base_url(self) -> None:
+        from miniflux_prompt_compiler import cli
+
+        captured: dict[str, object] = {}
+
+        def fake_run(*args, **kwargs):  # type: ignore[no-untyped-def]
+            captured.update(kwargs)
+            return "ok"
+
+        with mock.patch.object(cli, "run", side_effect=fake_run):
+            with mock.patch.object(
+                cli.sys, "argv", ["cli.py", "--base-url", "http://example.com"]
+            ):
+                exit_code = cli.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(captured.get("base_url"), "http://example.com")
 
 
 class PlaywrightFallbackTest(unittest.TestCase):

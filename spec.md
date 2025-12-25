@@ -100,3 +100,8 @@ Zakres: parsing argumentow CLI, walidacja parametrow, dokumentacja w README.
 Cel: uporzadkowanie struktury kodu bez zmiany zachowania funkcjonalnego.
 Definition of Done: logika podzielona na `core/`, `adapters/`, `app.py`, `cli.py`, `config.py`; `main.py` pozostaje kompatybilnym wrapperem; testy przechodza bez zmian funkcjonalnych.
 Zakres: przeniesienie funkcji z `main.py` do modułów oraz aktualizacja importow w testach.
+
+## Milestone 13: Konfiguracja base_url (zrealizowany)
+Cel: usuniecie hardcode adresu Miniflux i wprowadzenie konfiguracji z CLI i env.
+Definition of Done: `--base-url` nadpisuje adres; `MINIFLUX_BASE_URL` jest wspierany z `.env`; fallback jest jawnie logowany.
+Zakres: rozstrzyganie base_url w `run()`, flaga CLI oraz aktualizacja testow i README.

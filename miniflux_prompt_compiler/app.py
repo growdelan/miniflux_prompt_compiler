@@ -61,6 +61,7 @@ def process_entry(
 def run(
     env_path: Path = Path(".env"),
     environ: dict[str, str] | None = None,
+    base_url: str | None = None,
     fetcher: Callable[[str, str], list[MinifluxEntry]] | None = None,
     article_fetcher: Callable[[str], str] | None = None,
     youtube_fetcher: Callable[[str], str] | None = None,
@@ -80,9 +81,19 @@ def run(
             "Brak MINIFLUX_API_TOKEN w srodowisku lub w pliku .env w katalogu projektu."
         )
 
-    base_url = "http://192.168.0.209:8111"
+    resolved_base_url = (base_url or "").strip()
+    if not resolved_base_url:
+        resolved_base_url = env.get("MINIFLUX_BASE_URL") or file_env.get(
+            "MINIFLUX_BASE_URL"
+        )
+    if not resolved_base_url:
+        resolved_base_url = "http://localhost:8080"
+        logging.info(
+            "MINIFLUX_BASE_URL nie ustawiony, uzywam domyslnego: %s",
+            resolved_base_url,
+        )
     fetcher = fetcher or fetch_unread_entries
-    entries = fetcher(base_url, token)
+    entries = fetcher(resolved_base_url, token)
     logging.info("Pobrano %d wpisow unread.", len(entries))
     if article_fetcher is None:
         if use_playwright:
@@ -123,7 +134,7 @@ def run(
                 logging.info("Brak ID wpisu, pomijam oznaczanie jako read.")
             else:
                 try:
-                    marker(base_url, token, entry_id)
+                    marker(resolved_base_url, token, entry_id)
                     logging.info("Oznaczono jako read: %s", entry_id)
                 except RuntimeError as exc:
                     logging.info("Blad oznaczania read: %s", exc)
