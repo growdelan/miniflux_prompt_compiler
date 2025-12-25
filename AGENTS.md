@@ -87,8 +87,8 @@
 - Brak zmian w konfiguracji `MINIFLUX_BASE_URL` (etap 4 refactoru nie jest wykonywany).
 
 ## Aktualny stan
-- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami.
-- co jest skonczone: milestone’y 0.5–11 z `spec.md` oznaczone jako zrealizowane.
+- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, refactor na moduly `core/`, `adapters/`, `app.py`, `cli.py`.
+- co jest skonczone: milestone’y 0.5–12 z `spec.md` oznaczone jako zrealizowane.
 - co jest nastepne: brak kolejnego milestone’u; kolejne kroki po nowym PRD/ustaleniach.
 
 ## Configuration & Secrets
