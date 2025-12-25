@@ -115,3 +115,8 @@ Zakres: `ContentFetchError` i `MinifluxError`, stabilizacja ekstrakcji YouTube o
 Cel: uporzadkowanie komunikatow operacyjnych i wyjsciowych.
 Definition of Done: komunikaty operacyjne ida przez `logging.info`; `print()` pozostaje tylko do wypisywania promptow w trybie `--no-interactive`.
 Zakres: przeniesienie komunikatow o tokenach/promptach do logow oraz aktualizacja testow.
+
+## Milestone 16: Kolory w komunikatach tokenow i ostrzezeniach (zrealizowany)
+Cel: szybkie rozroznienie etykiet tokenow oraz ostrzezen o pominietych wpisach.
+Definition of Done: `GPT-Instant` jest zielony, `GPT-Thinking` zolty, a komunikat o pominieciu wpisu przekraczajacego limit tokenow jest czerwony; testy pozostaja stabilne.
+Zakres: kolorowanie ANSI w logach/wyjsciu oraz dostosowanie testow do kodow ANSI.
