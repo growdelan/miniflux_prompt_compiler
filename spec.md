@@ -61,7 +61,7 @@ Zakres: builder promptu, clipboard macOS, endpoint aktualizacji statusu.
 ## Milestone 4: Stabilnosc i jakosc (zrealizowany)
 Cel: poprawa niezawodnosci i podstawowe testy.
 Definition of Done: obsluga bledow sieciowych i pustych odpowiedzi; testy jednostkowe logiki klasyfikacji i budowania promptu; instrukcja uruchamiania.
-Zakres: testy (np. pytest), doprecyzowanie logow i dokumentacji.
+Zakres: testy (unittest), doprecyzowanie logow i dokumentacji.
 
 ## Milestone 5: Flaga Playwright i kontrola uruchomienia (zrealizowany)
 Cel: dodanie opcjonalnego trybu fallback bez zmiany domyslnego zachowania.
