@@ -314,12 +314,13 @@ class PlaywrightFlagTest(unittest.TestCase):
 class PlaywrightFallbackTest(unittest.TestCase):
     def test_fetch_article_with_fallback_uses_fallback(self) -> None:
         from miniflux_prompt_compiler.adapters import jina
+        from miniflux_prompt_compiler.types import ContentFetchError
 
         def fake_fallback(url: str) -> str:
             return "fallback content"
 
         with mock.patch.object(
-            jina, "fetch_article_markdown", side_effect=RuntimeError("fail")
+            jina, "fetch_article_markdown", side_effect=ContentFetchError("fail")
         ):
             content = jina.fetch_article_with_fallback(
                 "https://example.com",

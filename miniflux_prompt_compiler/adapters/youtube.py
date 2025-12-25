@@ -1,9 +1,21 @@
 
+from miniflux_prompt_compiler.types import ContentFetchError
+
+
+def _extract_text(item: object) -> str:
+    if isinstance(item, dict):
+        return str(item.get("text", "")).strip()
+    text_value = getattr(item, "text", "")
+    if isinstance(text_value, str):
+        return text_value.strip()
+    return ""
+
+
 def fetch_youtube_transcript(video_id: str, preferred_language: str = "en") -> str:
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
     except ImportError as exc:
-        raise RuntimeError(
+        raise ContentFetchError(
             "Brak zaleznosci youtube_transcript_api w srodowisku."
         ) from exc
 
@@ -19,15 +31,22 @@ def fetch_youtube_transcript(video_id: str, preferred_language: str = "en") -> s
                 video_id, languages=[preferred_language]
             )
         else:
-            raise RuntimeError("Nieznany interfejs youtube_transcript_api.")
+            raise ContentFetchError("Nieznany interfejs youtube_transcript_api.")
     except Exception as exc:  # youtube_transcript_api rzuca kilka typow wyjatkow
-        raise RuntimeError(f"Brak transkrypcji YouTube: {exc}") from exc
+        raise ContentFetchError(f"Brak transkrypcji YouTube: {exc}") from exc
 
+    lines: list[str] = []
     if hasattr(transcript, "snippets"):
-        lines = [snippet.text for snippet in transcript]
+        snippets = getattr(transcript, "snippets", [])
+        for snippet in snippets:
+            lines.append(_extract_text(snippet))
     else:
-        lines = [item.get("text", "") for item in transcript]
+        try:
+            for item in transcript:
+                lines.append(_extract_text(item))
+        except TypeError:
+            lines = []
     content = " ".join(line for line in lines if line)
     if not content.strip():
-        raise RuntimeError("Pusta transkrypcja YouTube.")
+        raise ContentFetchError("Pusta transkrypcja YouTube.")
     return content
