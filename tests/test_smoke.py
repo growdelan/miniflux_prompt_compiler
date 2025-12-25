@@ -251,22 +251,27 @@ class InteractiveModeTest(unittest.TestCase):
                     app_module, "count_tokens", side_effect=[70_000, 10, 20]
                 ):
                     buffer = io.StringIO()
-                    with redirect_stdout(buffer):
-                        output = run(
-                            env_path=env_path,
-                            environ={},
-                            fetcher=fake_fetcher,
-                            article_fetcher=fake_article_fetcher,
-                            youtube_fetcher=fake_youtube_fetcher,
-                            marker=fake_marker,
-                            clipboard=fake_clipboard,
-                            interactive=False,
-                        )
+                    with self.assertLogs(level="INFO") as logs:
+                        with redirect_stdout(buffer):
+                            output = run(
+                                env_path=env_path,
+                                environ={},
+                                fetcher=fake_fetcher,
+                                article_fetcher=fake_article_fetcher,
+                                youtube_fetcher=fake_youtube_fetcher,
+                                marker=fake_marker,
+                                clipboard=fake_clipboard,
+                                interactive=False,
+                            )
 
         stdout = buffer.getvalue()
         self.assertEqual(clipboard_values, [])
-        self.assertIn("Total tokens: 70000 -> CHUNKING", stdout)
-        self.assertIn("Generated prompts: 2", stdout)
+        self.assertTrue(
+            any("Total tokens: 70000 -> CHUNKING" in message for message in logs.output)
+        )
+        self.assertTrue(
+            any("Generated prompts: 2" in message for message in logs.output)
+        )
         self.assertIn("Prompt 1/2 (10 tokenow - GPT-Instant)", stdout)
         self.assertIn("PROMPT1", stdout)
         self.assertIn("Prompt 2/2 (20 tokenow - GPT-Instant)", stdout)

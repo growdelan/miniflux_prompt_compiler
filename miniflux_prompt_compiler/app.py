@@ -180,19 +180,22 @@ def run(
             print(prompts[0])
         return f"{summary}; Tokens: {total_tokens}; Label: {total_label}"
 
-    print(f"Total tokens: {total_tokens} -> {total_label}")
-    print(f"Generated prompts: {len(prompts)}")
+    logging.info("Total tokens: %s -> %s", total_tokens, total_label)
+    logging.info("Generated prompts: %s", len(prompts))
     if interactive:
         input_reader = input_reader or (lambda: input())
         for index, prompt in enumerate(prompts, start=1):
-            print(f"Press [Enter] to copy prompt {index}/{len(prompts)}")
+            logging.info("Press [Enter] to copy prompt %s/%s", index, len(prompts))
             input_reader()
             clipboard(prompt)
             token_count = count_tokens(prompt, tokenizer=tokenizer)
             label = label_for_tokens(token_count)
-            print(
-                f"Copied prompt {index}/{len(prompts)} "
-                f"({token_count} tokenow - {label})"
+            logging.info(
+                "Copied prompt %s/%s (%s tokenow - %s)",
+                index,
+                len(prompts),
+                token_count,
+                label,
             )
     else:
         for index, prompt in enumerate(prompts, start=1):
