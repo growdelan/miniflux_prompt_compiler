@@ -243,7 +243,7 @@ class InteractiveModeTest(unittest.TestCase):
                 app, "build_prompts_with_chunking", return_value=["PROMPT1", "PROMPT2"]
             ):
                 with mock.patch.object(
-                    app, "count_tokens", side_effect=[70_000, 10, 20]
+                    app, "count_tokens", side_effect=[40_000, 40_000]
                 ):
                     buffer = io.StringIO()
                     with redirect_stdout(buffer):
@@ -260,11 +260,11 @@ class InteractiveModeTest(unittest.TestCase):
 
         stdout = buffer.getvalue()
         self.assertEqual(clipboard_values, [])
-        self.assertIn("Total tokens: 70000 -> CHUNKING", stdout)
+        self.assertIn("Total tokens: 80000 -> CHUNKING", stdout)
         self.assertIn("Generated prompts: 2", stdout)
-        self.assertIn("Prompt 1/2 (10 tokenow - GPT-Instant)", stdout)
+        self.assertIn("Prompt 1/2 (40000 tokenow - GPT-Thinking)", stdout)
         self.assertIn("PROMPT1", stdout)
-        self.assertIn("Prompt 2/2 (20 tokenow - GPT-Instant)", stdout)
+        self.assertIn("Prompt 2/2 (40000 tokenow - GPT-Thinking)", stdout)
         self.assertIn("PROMPT2", stdout)
         self.assertIn("Prompts: 2", output)
         self.assertIn("Label: CHUNKING", output)

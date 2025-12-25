@@ -165,7 +165,6 @@ def run(
         else:
             skipped += 1
 
-    full_prompt = build_prompt(processed_items)
     prompts = build_prompts_with_chunking(
         processed_items, max_tokens=max_tokens, tokenizer=tokenizer
     )
@@ -173,18 +172,21 @@ def run(
         f"Unread entries: {len(entries)}; Success: {success}; "
         f"Failed: {failed}; Skipped: {skipped}"
     )
-    if not full_prompt or not prompts:
+    if not prompts:
         logging.info("Brak przetworzonych wpisow, schowek nie jest nadpisywany.")
         return summary
 
-    total_tokens = count_tokens(full_prompt, tokenizer=tokenizer)
+    prompt_tokens = [
+        count_tokens(prompt, tokenizer=tokenizer) for prompt in prompts
+    ]
+    total_tokens = sum(prompt_tokens)
     total_label = label_for_tokens(total_tokens)
 
     if len(prompts) == 1:
         if interactive:
             clipboard(prompts[0])
         else:
-            token_count = count_tokens(prompts[0], tokenizer=tokenizer)
+            token_count = prompt_tokens[0]
             label = label_for_tokens(token_count)
             print(f"Prompt 1/1 ({token_count} tokenow - {label})")
             print(prompts[0])
@@ -194,19 +196,23 @@ def run(
     print(f"Generated prompts: {len(prompts)}")
     if interactive:
         input_reader = input_reader or (lambda: input())
-        for index, prompt in enumerate(prompts, start=1):
+        for index, (prompt, token_count) in enumerate(
+            zip(prompts, prompt_tokens, strict=True),
+            start=1,
+        ):
             print(f"Press [Enter] to copy prompt {index}/{len(prompts)}")
             input_reader()
             clipboard(prompt)
-            token_count = count_tokens(prompt, tokenizer=tokenizer)
             label = label_for_tokens(token_count)
             print(
                 f"Copied prompt {index}/{len(prompts)} "
                 f"({token_count} tokenow - {label})"
             )
     else:
-        for index, prompt in enumerate(prompts, start=1):
-            token_count = count_tokens(prompt, tokenizer=tokenizer)
+        for index, (prompt, token_count) in enumerate(
+            zip(prompts, prompt_tokens, strict=True),
+            start=1,
+        ):
             label = label_for_tokens(token_count)
             print(f"Prompt {index}/{len(prompts)} ({token_count} tokenow - {label})")
             print(prompt)
