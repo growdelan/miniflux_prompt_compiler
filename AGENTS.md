@@ -1,7 +1,13 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `main.py` zawiera punkt wejścia oraz minimalny klient Miniflux do pobierania `unread`.
+- `main.py` jest cienkim wrapperem kompatybilnym z dotychczasowym uruchomieniem i re-eksportami.
+- `miniflux_prompt_compiler/cli.py` zawiera parsowanie argumentów i `main()`.
+- `miniflux_prompt_compiler/app.py` zawiera `run()` i orkiestrację przepływu.
+- `miniflux_prompt_compiler/core/` to czysta logika (prompt, tokeny, chunking, klasyfikacja URL).
+- `miniflux_prompt_compiler/adapters/` to integracje I/O (Miniflux HTTP, Jina, Playwright, YouTube, clipboard).
+- `miniflux_prompt_compiler/config.py` wczytuje `.env`.
+- `miniflux_prompt_compiler/types.py` zawiera kontrakty danych.
 - `pyproject.toml` definiuje metadane projektu i wymagania Pythona (`>=3.13`).
 - `README.md` opisuje cel narzędzia w jednym zdaniu.
 - `tests/test_smoke.py` zawiera prosty smoke test dla minimalnego przebiegu.
