@@ -120,3 +120,8 @@ Zakres: przeniesienie komunikatow o tokenach/promptach do logow oraz aktualizacj
 Cel: szybkie rozroznienie etykiet tokenow oraz ostrzezen o pominietych wpisach.
 Definition of Done: `GPT-Instant` jest zielony, `GPT-Thinking` zolty, a komunikat o pominieciu wpisu przekraczajacego limit tokenow jest czerwony; testy pozostaja stabilne.
 Zakres: kolorowanie ANSI w logach/wyjsciu oraz dostosowanie testow do kodow ANSI.
+
+## Milestone 17: Timeouty Jina jako bledy domenowe (zrealizowany)
+Cel: stabilne przetwarzanie timeoutow z `urllib` bez przerywania calego przebiegu.
+Definition of Done: `TimeoutError` i `socket.timeout` sa mapowane na `ContentFetchError`, co pozwala na retry i uruchomienie fallbacku Playwright; jest test jednostkowy.
+Zakres: obsluga timeoutow w adapterze Jina i test potwierdzajacy opakowanie wyjatku.
