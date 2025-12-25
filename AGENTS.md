@@ -116,8 +116,8 @@
 - Brak zmiany polityki timeoutow i retry (np. brak exponential backoff).
 
 ## Aktualny stan
-- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, kolorowe etykiety i ostrzezenia ANSI, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, konfiguracja `MINIFLUX_BASE_URL` (CLI/env/.env), wyjatki domenowe dla I/O, stabilne oznaczanie `read`, logowanie operacyjne przez `logging`.
-- co jest skonczone: milestone’y 0.5–16 z `spec.md` oznaczone jako zrealizowane.
+- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube z obsluga timeoutow `urllib`, prompty z chunkowaniem po tokenach, etykiety tokenow, kolorowe etykiety i ostrzezenia ANSI, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, konfiguracja `MINIFLUX_BASE_URL` (CLI/env/.env), wyjatki domenowe dla I/O, stabilne oznaczanie `read`, logowanie operacyjne przez `logging`.
+- co jest skonczone: milestone’y 0.5–17 z `spec.md` oznaczone jako zrealizowane.
 - co jest nastepne: brak kolejnego milestone’u; kolejne kroki po nowym PRD/ustaleniach.
 
 ## Configuration & Secrets
