@@ -65,6 +65,8 @@
 - Wyjatki domenowe `ContentFetchError` i `MinifluxError` dla stabilniejszych komunikatow I/O.
 - Stabilniejsza ekstrakcja transkrypcji YouTube (snippets/listy/obiekty).
 - Bezpieczne parsowanie `entry_id` z logiem i pominieciem oznaczania `read` przy blednym ID.
+- Ujednolicenie logowania operacyjnego: `logging.info` zamiast `print()` poza trybem `--no-interactive`.
+- Dostosowanie testu trybu nieinteraktywnego do logowania INFO.
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
@@ -92,6 +94,7 @@
 - `base_url` jest rozstrzygany w kolejnosci: CLI -> env -> .env -> domyslny fallback z logiem.
 - Adaptery I/O rzucaja wyjatki domenowe zamiast ogolnych `RuntimeError`, bez zmiany zachowania funkcjonalnego.
 - `entry_id` nie blokuje przebiegu; przy blednym ID wpis nie jest oznaczany jako `read`.
+- Komunikaty operacyjne sa logowane przez `logging`, a `print()` pozostaje tylko do wypisywania promptow w trybie `--no-interactive`.
 
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
@@ -101,6 +104,7 @@
 - Brak zmian w zachowaniu funkcjonalnym i logice biznesowej; refactor jest strukturalny.
 - Brak walidacji ani normalizacji `MINIFLUX_BASE_URL` poza prostym `strip()`.
 - Brak asynchronicznosci i rozbudowanych retry poza istniejacym minimum.
+- Brak wprowadzenia flag `--quiet` / `--verbose` (pozostawione na przyszlosc).
 
 ## Aktualny stan
 - co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, refactor na moduly `core/`, `adapters/`, `app.py`, `cli.py`.

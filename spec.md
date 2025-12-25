@@ -110,3 +110,8 @@ Zakres: rozstrzyganie base_url w `run()`, flaga CLI oraz aktualizacja testow i R
 Cel: ujednolicenie bledow I/O i poprawa stabilnosci przetwarzania wpisow.
 Definition of Done: adaptery I/O korzystaja z wyjatkow domenowych; parsowanie `entry_id` nie przerywa przebiegu; transkrypcja YouTube jest stabilnie ekstraktowana.
 Zakres: `ContentFetchError` i `MinifluxError`, stabilizacja ekstrakcji YouTube oraz bezpieczne ID w `run()`.
+
+## Milestone 15: Spojnosc logowania i interakcji (zrealizowany)
+Cel: uporzadkowanie komunikatow operacyjnych i wyjsciowych.
+Definition of Done: komunikaty operacyjne ida przez `logging.info`; `print()` pozostaje tylko do wypisywania promptow w trybie `--no-interactive`.
+Zakres: przeniesienie komunikatow o tokenach/promptach do logow oraz aktualizacja testow.

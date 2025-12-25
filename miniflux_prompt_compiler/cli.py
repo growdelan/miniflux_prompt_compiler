@@ -61,10 +61,10 @@ def main() -> int:
             base_url=args.base_url,
         )
     except RuntimeError as exc:
-        print(str(exc), file=sys.stderr)
+        logging.error(str(exc))
         return 1
 
-    print(message)
+    logging.info(message)
     return 0
 
 
