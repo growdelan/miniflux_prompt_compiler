@@ -7,16 +7,16 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-from main import (
-    build_prompt,
-    build_prompts_with_chunking,
-    count_tokens,
+from miniflux_prompt_compiler.app import run
+from miniflux_prompt_compiler.core.chunking import build_prompts_with_chunking
+from miniflux_prompt_compiler.core.prompting import build_prompt
+from miniflux_prompt_compiler.core.tokenization import count_tokens, label_for_tokens
+from miniflux_prompt_compiler.core.url_classify import (
     extract_youtube_id,
     is_youtube_shorts,
     is_youtube_url,
-    label_for_tokens,
-    run,
 )
+from miniflux_prompt_compiler.types import ProcessedItem
 
 
 class SmokeTest(unittest.TestCase):
@@ -75,7 +75,7 @@ class SmokeTest(unittest.TestCase):
 
 class MarkReadFallbackTest(unittest.TestCase):
     def test_mark_entry_read_falls_back_on_400(self) -> None:
-        from main import mark_entry_read
+        from miniflux_prompt_compiler.adapters.miniflux_http import mark_entry_read
 
         calls: list[tuple[str, str]] = []
 
@@ -128,8 +128,8 @@ class PromptBuildTest(unittest.TestCase):
     def test_build_prompt_wraps_items(self) -> None:
         prompt = build_prompt(
             [
-                {"title": "Artykul", "content": "Tresc A"},
-                {"title": "Video", "content": "Tresc B"},
+                ProcessedItem(title="Artykul", content="Tresc A"),
+                ProcessedItem(title="Video", content="Tresc B"),
             ]
         )
 
@@ -158,43 +158,43 @@ class TokenLabelTest(unittest.TestCase):
 
 class PromptChunkingTest(unittest.TestCase):
     def test_build_prompts_with_chunking_splits_on_limit(self) -> None:
-        import main
+        from miniflux_prompt_compiler.core import chunking
 
         items = [
-            {"title": "A", "content": "X"},
-            {"title": "B", "content": "Y"},
-            {"title": "C", "content": "Z"},
+            ProcessedItem(title="A", content="X"),
+            ProcessedItem(title="B", content="Y"),
+            ProcessedItem(title="C", content="Z"),
         ]
 
         def fake_build_prompt(current):  # type: ignore[no-untyped-def]
-            return "|".join(item["title"] for item in current)
+            return "|".join(item.title for item in current)
 
         def fake_count_tokens(text: str, **kwargs) -> int:
             return len(text.split("|")) if text else 0
 
-        with mock.patch.object(main, "build_prompt", side_effect=fake_build_prompt):
-            with mock.patch.object(main, "count_tokens", side_effect=fake_count_tokens):
+        with mock.patch.object(chunking, "build_prompt", side_effect=fake_build_prompt):
+            with mock.patch.object(chunking, "count_tokens", side_effect=fake_count_tokens):
                 prompts = build_prompts_with_chunking(items, max_tokens=2)
 
         self.assertEqual(prompts, ["A|B", "C"])
 
     def test_build_prompts_with_chunking_skips_oversize(self) -> None:
-        import main
+        from miniflux_prompt_compiler.core import chunking
 
         items = [
-            {"title": "A", "content": "X"},
-            {"title": "BIG", "content": "Y"},
-            {"title": "B", "content": "Z"},
+            ProcessedItem(title="A", content="X"),
+            ProcessedItem(title="BIG", content="Y"),
+            ProcessedItem(title="B", content="Z"),
         ]
 
         def fake_build_prompt(current):  # type: ignore[no-untyped-def]
-            return "|".join(item["title"] for item in current)
+            return "|".join(item.title for item in current)
 
         def fake_count_tokens(text: str, **kwargs) -> int:
             return 10 if "BIG" in text else len(text.split("|"))
 
-        with mock.patch.object(main, "build_prompt", side_effect=fake_build_prompt):
-            with mock.patch.object(main, "count_tokens", side_effect=fake_count_tokens):
+        with mock.patch.object(chunking, "build_prompt", side_effect=fake_build_prompt):
+            with mock.patch.object(chunking, "count_tokens", side_effect=fake_count_tokens):
                 with self.assertLogs(level="INFO") as logs:
                     prompts = build_prompts_with_chunking(items, max_tokens=2)
 
@@ -209,7 +209,7 @@ class PromptChunkingTest(unittest.TestCase):
 
 class InteractiveModeTest(unittest.TestCase):
     def test_run_no_interactive_outputs_prompts(self) -> None:
-        import main
+        from miniflux_prompt_compiler import app as app_module
 
         with tempfile.TemporaryDirectory() as tmpdir:
             env_path = Path(tmpdir) / ".env"
@@ -236,10 +236,12 @@ class InteractiveModeTest(unittest.TestCase):
                 clipboard_values.append(text)
 
             with mock.patch.object(
-                main, "build_prompts_with_chunking", return_value=["PROMPT1", "PROMPT2"]
+                app_module,
+                "build_prompts_with_chunking",
+                return_value=["PROMPT1", "PROMPT2"],
             ):
                 with mock.patch.object(
-                    main, "count_tokens", side_effect=[70_000, 10, 20]
+                    app_module, "count_tokens", side_effect=[70_000, 10, 20]
                 ):
                     buffer = io.StringIO()
                     with redirect_stdout(buffer):
@@ -268,7 +270,7 @@ class InteractiveModeTest(unittest.TestCase):
 
 class PlaywrightFlagTest(unittest.TestCase):
     def test_main_passes_playwright_flag(self) -> None:
-        import main
+        from miniflux_prompt_compiler import cli
 
         captured: dict[str, object] = {}
 
@@ -276,9 +278,9 @@ class PlaywrightFlagTest(unittest.TestCase):
             captured.update(kwargs)
             return "ok"
 
-        with mock.patch.object(main, "run", side_effect=fake_run):
-            with mock.patch.object(main.sys, "argv", ["main.py", "--playwright"]):
-                exit_code = main.main()
+        with mock.patch.object(cli, "run", side_effect=fake_run):
+            with mock.patch.object(cli.sys, "argv", ["cli.py", "--playwright"]):
+                exit_code = cli.main()
 
         self.assertEqual(exit_code, 0)
         self.assertTrue(captured.get("use_playwright"))
@@ -286,15 +288,15 @@ class PlaywrightFlagTest(unittest.TestCase):
 
 class PlaywrightFallbackTest(unittest.TestCase):
     def test_fetch_article_with_fallback_uses_fallback(self) -> None:
-        import main
+        from miniflux_prompt_compiler.adapters import jina
 
         def fake_fallback(url: str) -> str:
             return "fallback content"
 
         with mock.patch.object(
-            main, "fetch_article_markdown", side_effect=RuntimeError("fail")
+            jina, "fetch_article_markdown", side_effect=RuntimeError("fail")
         ):
-            content = main.fetch_article_with_fallback(
+            content = jina.fetch_article_with_fallback(
                 "https://example.com",
                 use_playwright=True,
                 fallback_fetcher=fake_fallback,

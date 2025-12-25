@@ -1,15 +1,19 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- `main.py` zawiera punkt wejścia oraz minimalny klient Miniflux do pobierania `unread`.
+- `main.py` jest cienkim wrapperem kompatybilnym z dotychczasowym uruchomieniem i re-eksportami.
+- `miniflux_prompt_compiler/cli.py` zawiera parsowanie argumentów i `main()`.
+- `miniflux_prompt_compiler/app.py` zawiera `run()` i orkiestrację przepływu.
+- `miniflux_prompt_compiler/core/` to czysta logika (prompt, tokeny, chunking, klasyfikacja URL).
+- `miniflux_prompt_compiler/adapters/` to integracje I/O (Miniflux HTTP, Jina, Playwright, YouTube, clipboard).
+- `miniflux_prompt_compiler/config.py` wczytuje `.env`.
+- `miniflux_prompt_compiler/types.py` zawiera kontrakty danych.
 - `pyproject.toml` definiuje metadane projektu i wymagania Pythona (`>=3.13`).
 - `README.md` opisuje cel narzędzia w jednym zdaniu.
 - `tests/test_smoke.py` zawiera prosty smoke test dla minimalnego przebiegu.
 
 ## Build, Test, and Development Commands
-- `MINIFLUX_API_TOKEN=... python main.py` uruchamia aplikację i pobiera liczbę `unread`.
 - `python -m unittest discover -s tests` uruchamia smoke test.
-- Brak zdefiniowanych komend budowania lub uruchamiania środowiska wirtualnego; jeśli dodasz skrypty, opisz je tutaj.
 
 ## Coding Style & Naming Conventions
 - Projekt jest w Pythonie; trzymaj się stylu PEP 8.
@@ -28,6 +32,7 @@
 
 ## Co dodano na tym etapie
 - Minimalny klient Miniflux pobierający `unread` i logujący liczbę wpisów.
+- Typy danych: `MinifluxEntry` (`TypedDict`) oraz `ProcessedItem` (`dataclass`) w `miniflux_prompt_compiler/types.py`.
 - Klasyfikacja linków (YouTube vs artykuł) z pominięciem `/shorts/`.
 - Ekstrakcja treści artykułów przez `https://r.jina.ai/<URL>` z retry i timeoutem.
 - Pobieranie transkrypcji YouTube z obsługą różnych wersji API biblioteki.
@@ -52,9 +57,12 @@
 - Flagi CLI `--max-tokens` i `--tokenizer` z przekazaniem do logiki tokenow i chunkowania.
 - Obsluga tokenizerow `auto`, `tiktoken`, `approx` i testy liczenia przyblizonego.
 - Aktualizacja README o nowe flagi uruchomieniowe.
+- Rozbicie kodu na modul `core/`, `adapters/`, `app.py`, `cli.py`, `config.py` z zachowaniem logiki.
+- Cienki `main.py` jako wrapper i re-eksport funkcji dla kompatybilnosci testow i uruchomienia.
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
+- Typy `MinifluxEntry` i `ProcessedItem` centralizujemy w osobnym module, by ujednolicic sygnatury funkcji i uproscic testy.
 - Konfiguracja tokenu tylko przez `MINIFLUX_API_TOKEN` z `.env` lub srodowiska.
 - Endpoint przyjety w najprostszym wariancie: `/v1/entries?status=unread`.
 - YouTube: obsluga `get_transcript` (stare API) i `fetch` (nowe API) w `youtube_transcript_api`.
@@ -73,15 +81,20 @@
 - Tryb fallback jest kontrolowany flaga `--playwright` i nie zmienia domyslnego zachowania bez tej flagi.
 - Playwright dziala synchronicznie i tylko jako fallback po bledzie Jiny.
 - Logowanie operacyjne oparte o `logging.info`, bez dodatkowych narzedzi obserwowalnosci.
+- Struktura kodu jest rozdzielona na warstwy `core/` (czysta logika) i `adapters/` (I/O), z `app.py` jako orkiestracja.
+- `main.py` pozostaje kompatybilnym punktem wejscia i re-eksportem API dla testow.
 
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
+- Brak pelnego modelowania wszystkich pol odpowiedzi Miniflux (korzystamy tylko z wymaganych pol).
 - Brak detekcji paywalla i rozbudowanego czyszczenia tresci.
 - Brak automatycznej instalacji przegladarek Playwright.
+- Brak zmian w zachowaniu funkcjonalnym i logice biznesowej; refactor jest strukturalny.
+- Brak zmian w konfiguracji `MINIFLUX_BASE_URL` (etap 4 refactoru nie jest wykonywany).
 
 ## Aktualny stan
-- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami.
-- co jest skonczone: milestone’y 0.5–11 z `spec.md` oznaczone jako zrealizowane.
+- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, refactor na moduly `core/`, `adapters/`, `app.py`, `cli.py`.
+- co jest skonczone: milestone’y 0.5–12 z `spec.md` oznaczone jako zrealizowane.
 - co jest nastepne: brak kolejnego milestone’u; kolejne kroki po nowym PRD/ustaleniach.
 
 ## Configuration & Secrets
