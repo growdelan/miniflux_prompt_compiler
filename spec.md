@@ -105,3 +105,8 @@ Zakres: przeniesienie funkcji z `main.py` do modułów oraz aktualizacja importo
 Cel: usuniecie hardcode adresu Miniflux i wprowadzenie konfiguracji z CLI i env.
 Definition of Done: `--base-url` nadpisuje adres; `MINIFLUX_BASE_URL` jest wspierany z `.env`; fallback jest jawnie logowany.
 Zakres: rozstrzyganie base_url w `run()`, flaga CLI oraz aktualizacja testow i README.
+
+## Milestone 14: Uporzadkowanie bledow i kruchych miejsc (zrealizowany)
+Cel: ujednolicenie bledow I/O i poprawa stabilnosci przetwarzania wpisow.
+Definition of Done: adaptery I/O korzystaja z wyjatkow domenowych; parsowanie `entry_id` nie przerywa przebiegu; transkrypcja YouTube jest stabilnie ekstraktowana.
+Zakres: `ContentFetchError` i `MinifluxError`, stabilizacja ekstrakcji YouTube oraz bezpieczne ID w `run()`.

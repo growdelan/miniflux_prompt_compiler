@@ -62,6 +62,9 @@
 - Konfiguracja `MINIFLUX_BASE_URL` z rozstrzyganiem CLI/env/.env i domyslnym fallbackiem.
 - Flaga CLI `--base-url` do nadpisania adresu Miniflux oraz testy przekazania/odczytu.
 - Aktualizacja README o `MINIFLUX_BASE_URL` i uzycie `--base-url`.
+- Wyjatki domenowe `ContentFetchError` i `MinifluxError` dla stabilniejszych komunikatow I/O.
+- Stabilniejsza ekstrakcja transkrypcji YouTube (snippets/listy/obiekty).
+- Bezpieczne parsowanie `entry_id` z logiem i pominieciem oznaczania `read` przy blednym ID.
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
@@ -87,6 +90,8 @@
 - Struktura kodu jest rozdzielona na warstwy `core/` (czysta logika) i `adapters/` (I/O), z `app.py` jako orkiestracja.
 - `main.py` pozostaje kompatybilnym punktem wejscia i re-eksportem API dla testow.
 - `base_url` jest rozstrzygany w kolejnosci: CLI -> env -> .env -> domyslny fallback z logiem.
+- Adaptery I/O rzucaja wyjatki domenowe zamiast ogolnych `RuntimeError`, bez zmiany zachowania funkcjonalnego.
+- `entry_id` nie blokuje przebiegu; przy blednym ID wpis nie jest oznaczany jako `read`.
 
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
@@ -95,6 +100,7 @@
 - Brak automatycznej instalacji przegladarek Playwright.
 - Brak zmian w zachowaniu funkcjonalnym i logice biznesowej; refactor jest strukturalny.
 - Brak walidacji ani normalizacji `MINIFLUX_BASE_URL` poza prostym `strip()`.
+- Brak asynchronicznosci i rozbudowanych retry poza istniejacym minimum.
 
 ## Aktualny stan
 - co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, refactor na moduly `core/`, `adapters/`, `app.py`, `cli.py`.

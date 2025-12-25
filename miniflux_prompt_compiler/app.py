@@ -126,18 +126,28 @@ def run(
 
         if processed:
             entry_id_raw = entry.get("id")
-            try:
-                entry_id = int(entry_id_raw) if entry_id_raw is not None else 0
-            except (TypeError, ValueError):
-                entry_id = 0
-            if not entry_id:
+            if entry_id_raw is None:
                 logging.info("Brak ID wpisu, pomijam oznaczanie jako read.")
             else:
                 try:
-                    marker(resolved_base_url, token, entry_id)
-                    logging.info("Oznaczono jako read: %s", entry_id)
-                except RuntimeError as exc:
-                    logging.info("Blad oznaczania read: %s", exc)
+                    entry_id = int(entry_id_raw)
+                except (TypeError, ValueError):
+                    logging.info(
+                        "Niepoprawny ID wpisu (%s), pomijam oznaczanie jako read.",
+                        entry_id_raw,
+                    )
+                else:
+                    if entry_id <= 0:
+                        logging.info(
+                            "Niepoprawny ID wpisu (%s), pomijam oznaczanie jako read.",
+                            entry_id_raw,
+                        )
+                    else:
+                        try:
+                            marker(resolved_base_url, token, entry_id)
+                            logging.info("Oznaczono jako read: %s", entry_id)
+                        except RuntimeError as exc:
+                            logging.info("Blad oznaczania read: %s", exc)
             logging.info("Sukces")
             success += 1
             if item is not None:

@@ -2,7 +2,7 @@ import json
 import urllib.error
 import urllib.request
 
-from miniflux_prompt_compiler.types import MinifluxEntry
+from miniflux_prompt_compiler.types import MinifluxEntry, MinifluxError
 
 
 def fetch_unread_entries(
@@ -15,11 +15,11 @@ def fetch_unread_entries(
         with urllib.request.urlopen(request, timeout=timeout) as response:
             payload = json.load(response)
     except (urllib.error.URLError, json.JSONDecodeError) as exc:
-        raise RuntimeError(f"Nie udalo sie pobrac wpisow: {exc}") from exc
+        raise MinifluxError(f"Nie udalo sie pobrac wpisow: {exc}") from exc
 
     entries = payload.get("entries", [])
     if not isinstance(entries, list):
-        raise RuntimeError(
+        raise MinifluxError(
             "Nieprawidlowy format odpowiedzi Miniflux (brak listy entries)."
         )
     return entries
@@ -66,10 +66,10 @@ def mark_entry_read(
         except urllib.error.HTTPError as exc:
             if exc.code in {400, 404} and index < len(attempts) - 1:
                 continue
-            raise RuntimeError(
+            raise MinifluxError(
                 f"Nie udalo sie oznaczyc wpisu {entry_id} jako read: {exc}"
             ) from exc
         except urllib.error.URLError as exc:
-            raise RuntimeError(
+            raise MinifluxError(
                 f"Nie udalo sie oznaczyc wpisu {entry_id} jako read: {exc}"
             ) from exc

@@ -12,3 +12,11 @@ class MinifluxEntry(TypedDict, total=False):
 class ProcessedItem:
     title: str
     content: str
+
+
+class ContentFetchError(RuntimeError):
+    pass
+
+
+class MinifluxError(RuntimeError):
+    pass

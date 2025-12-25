@@ -4,6 +4,8 @@ import urllib.error
 import urllib.request
 from collections.abc import Callable
 
+from miniflux_prompt_compiler.types import ContentFetchError
+
 
 def fetch_article_markdown(url: str, timeout: int = 15, retries: int = 3) -> str:
     logging.info("Jina: start")
@@ -18,18 +20,20 @@ def fetch_article_markdown(url: str, timeout: int = 15, retries: int = 3) -> str
             if attempt < retries:
                 time.sleep(1)
                 continue
-            raise RuntimeError(f"Nie udalo sie pobrac tresci artykulu: {exc}") from exc
+            raise ContentFetchError(
+                f"Nie udalo sie pobrac tresci artykulu: {exc}"
+            ) from exc
 
         # Decyzja: pusta tresc traktujemy jako porazke, bo nie ma czego uzyc dalej.
         if content.strip():
             return content
-        last_error = RuntimeError("Pusta tresc z jina.ai")
+        last_error = ContentFetchError("Pusta tresc z jina.ai")
         if attempt < retries:
             time.sleep(1)
             continue
         break
 
-    raise RuntimeError(f"Nie udalo sie pobrac tresci artykulu: {last_error}")
+    raise ContentFetchError(f"Nie udalo sie pobrac tresci artykulu: {last_error}")
 
 
 def fetch_article_with_fallback(
@@ -41,7 +45,7 @@ def fetch_article_with_fallback(
         content = fetch_article_markdown(url)
         logging.info("Content source selected: jina")
         return content
-    except RuntimeError as exc:
+    except ContentFetchError as exc:
         logging.info("Jina: error (%s)", exc)
         if not use_playwright or fallback_fetcher is None:
             raise
