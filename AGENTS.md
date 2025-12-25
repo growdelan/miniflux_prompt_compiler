@@ -103,12 +103,11 @@
 - Brak automatycznej instalacji przegladarek Playwright.
 - Brak zmian w zachowaniu funkcjonalnym i logice biznesowej; refactor jest strukturalny.
 - Brak walidacji ani normalizacji `MINIFLUX_BASE_URL` poza prostym `strip()`.
-- Brak asynchronicznosci i rozbudowanych retry poza istniejacym minimum.
 - Brak wprowadzenia flag `--quiet` / `--verbose` (pozostawione na przyszlosc).
 
 ## Aktualny stan
-- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, refactor na moduly `core/`, `adapters/`, `app.py`, `cli.py`.
-- co jest skonczone: milestone’y 0.5–12 z `spec.md` oznaczone jako zrealizowane.
+- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, konfiguracja `MINIFLUX_BASE_URL` (CLI/env/.env), wyjatki domenowe dla I/O, stabilne oznaczanie `read`, logowanie operacyjne przez `logging`.
+- co jest skonczone: milestone’y 0.5–15 z `spec.md` oznaczone jako zrealizowane.
 - co jest nastepne: brak kolejnego milestone’u; kolejne kroki po nowym PRD/ustaleniach.
 
 ## Configuration & Secrets
