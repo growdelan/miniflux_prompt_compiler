@@ -12,6 +12,8 @@ from pathlib import Path
 from subprocess import CalledProcessError, run as run_process
 from urllib.parse import parse_qs, urlparse
 
+from miniflux_prompt_compiler.types import MinifluxEntry, ProcessedItem
+
 PROMPT = """
 <Cel>
 Twoim celem jest dogłębna analiza listy artykułów oraz transkrypcji i stworzenie merytorycznych, blogowych podsumowań, które oddają sens i wartość treści, a nie tylko skrót faktów.
@@ -106,7 +108,7 @@ def load_env(path: Path) -> dict[str, str]:
 
 def fetch_unread_entries(
     base_url: str, token: str, timeout: int = 10
-) -> list[dict[str, object]]:
+) -> list[MinifluxEntry]:
     # Miniflux API endpoint przyjmujemy w najprostszym wariancie: /v1/entries?status=unread.
     url = f"{base_url.rstrip('/')}/v1/entries?status=unread"
     request = urllib.request.Request(url, headers={"X-Auth-Token": token})
@@ -330,14 +332,14 @@ def copy_to_clipboard(text: str) -> None:
         raise RuntimeError(f"Nie udalo sie skopiowac do schowka: {exc}") from exc
 
 
-def build_prompt(items: list[dict[str, str]]) -> str:
+def build_prompt(items: list[ProcessedItem]) -> str:
     if not items:
         return ""
 
     sections: list[str] = []
     for item in items:
-        title = item.get("title", "")
-        content = item.get("content", "")
+        title = item.title
+        content = item.content
         section = f"---\n\nTytuł: {title}\nTreść:\n{content}"
         sections.append(section)
     items_block = "\n\n".join(sections)
@@ -350,10 +352,10 @@ def build_prompt(items: list[dict[str, str]]) -> str:
 
 
 def build_prompts_with_chunking(
-    items: list[dict[str, str]], max_tokens: int, tokenizer: str = "auto"
+    items: list[ProcessedItem], max_tokens: int, tokenizer: str = "auto"
 ) -> list[str]:
     prompts: list[str] = []
-    current: list[dict[str, str]] = []
+    current: list[ProcessedItem] = []
 
     for item in items:
         current.append(item)
@@ -382,38 +384,38 @@ def build_prompts_with_chunking(
 
 
 def process_entry(
-    entry: dict[str, object],
+    entry: MinifluxEntry,
     article_fetcher: Callable[[str], str],
     youtube_fetcher: Callable[[str], str],
-) -> tuple[bool, str | None, str | None]:
-    title = str(entry.get("title", "")).strip()
-    url = str(entry.get("url", "")).strip()
+) -> tuple[bool, ProcessedItem | None]:
+    title = (entry.get("title") or "").strip()
+    url = (entry.get("url") or "").strip()
     if not url:
         logging.info("Brak URL, pomijam wpis.")
-        return False, None, None
+        return False, None
 
     logging.info("Start: %s", title or url)
     if is_youtube_url(url):
         if is_youtube_shorts(url):
             logging.info("Pomijam: YouTube Shorts")
-            return False, None, None
+            return False, None
         video_id = extract_youtube_id(url)
         if not video_id:
             logging.info("Niepoprawny link YouTube")
-            return False, None, None
+            return False, None
         logging.info("Typ: YouTube")
         content = youtube_fetcher(video_id)
-        return True, title, content
+        return True, ProcessedItem(title=title, content=content)
 
     logging.info("Typ: artykul")
     content = article_fetcher(url)
-    return True, title, content
+    return True, ProcessedItem(title=title, content=content)
 
 
 def run(
     env_path: Path = Path(".env"),
     environ: dict[str, str] | None = None,
-    fetcher: Callable[[str, str], list[dict[str, object]]] | None = None,
+    fetcher: Callable[[str, str], list[MinifluxEntry]] | None = None,
     article_fetcher: Callable[[str], str] | None = None,
     youtube_fetcher: Callable[[str], str] | None = None,
     marker: Callable[[str, str, int], None] | None = None,
@@ -454,10 +456,10 @@ def run(
     success = 0
     failed = 0
     skipped = 0
-    processed_items: list[dict[str, str]] = []
+    processed_items: list[ProcessedItem] = []
     for entry in entries:
         try:
-            processed, title, content = process_entry(
+            processed, item = process_entry(
                 entry, article_fetcher=article_fetcher, youtube_fetcher=youtube_fetcher
             )
         except RuntimeError as exc:
@@ -466,7 +468,11 @@ def run(
             continue
 
         if processed:
-            entry_id = int(entry.get("id", 0))
+            entry_id_raw = entry.get("id")
+            try:
+                entry_id = int(entry_id_raw) if entry_id_raw is not None else 0
+            except (TypeError, ValueError):
+                entry_id = 0
             if not entry_id:
                 logging.info("Brak ID wpisu, pomijam oznaczanie jako read.")
             else:
@@ -477,8 +483,8 @@ def run(
                     logging.info("Blad oznaczania read: %s", exc)
             logging.info("Sukces")
             success += 1
-            if title is not None and content is not None:
-                processed_items.append({"title": title, "content": content})
+            if item is not None:
+                processed_items.append(item)
         else:
             skipped += 1
 
