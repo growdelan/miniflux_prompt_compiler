@@ -42,6 +42,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         default="auto",
         help="Wybor tokenizera: auto, tiktoken, approx.",
     )
+    parser.add_argument(
+        "--base-url",
+        help="Nadpisz URL instancji Miniflux (ENV: MINIFLUX_BASE_URL).",
+    )
     return parser.parse_args(argv)
 
 
@@ -54,6 +58,7 @@ def main() -> int:
             interactive=args.interactive,
             max_tokens=args.max_tokens,
             tokenizer=args.tokenizer,
+            base_url=args.base_url,
         )
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)

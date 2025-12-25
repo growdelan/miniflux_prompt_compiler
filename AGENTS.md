@@ -59,6 +59,9 @@
 - Aktualizacja README o nowe flagi uruchomieniowe.
 - Rozbicie kodu na modul `core/`, `adapters/`, `app.py`, `cli.py`, `config.py` z zachowaniem logiki.
 - Cienki `main.py` jako wrapper i re-eksport funkcji dla kompatybilnosci testow i uruchomienia.
+- Konfiguracja `MINIFLUX_BASE_URL` z rozstrzyganiem CLI/env/.env i domyslnym fallbackiem.
+- Flaga CLI `--base-url` do nadpisania adresu Miniflux oraz testy przekazania/odczytu.
+- Aktualizacja README o `MINIFLUX_BASE_URL` i uzycie `--base-url`.
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
@@ -83,6 +86,7 @@
 - Logowanie operacyjne oparte o `logging.info`, bez dodatkowych narzedzi obserwowalnosci.
 - Struktura kodu jest rozdzielona na warstwy `core/` (czysta logika) i `adapters/` (I/O), z `app.py` jako orkiestracja.
 - `main.py` pozostaje kompatybilnym punktem wejscia i re-eksportem API dla testow.
+- `base_url` jest rozstrzygany w kolejnosci: CLI -> env -> .env -> domyslny fallback z logiem.
 
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
@@ -90,7 +94,7 @@
 - Brak detekcji paywalla i rozbudowanego czyszczenia tresci.
 - Brak automatycznej instalacji przegladarek Playwright.
 - Brak zmian w zachowaniu funkcjonalnym i logice biznesowej; refactor jest strukturalny.
-- Brak zmian w konfiguracji `MINIFLUX_BASE_URL` (etap 4 refactoru nie jest wykonywany).
+- Brak walidacji ani normalizacji `MINIFLUX_BASE_URL` poza prostym `strip()`.
 
 ## Aktualny stan
 - co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, refactor na moduly `core/`, `adapters/`, `app.py`, `cli.py`.

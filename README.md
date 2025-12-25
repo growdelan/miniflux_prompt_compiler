@@ -12,11 +12,17 @@ Utworz `.env` w katalogu projektu:
 
 ```env
 MINIFLUX_API_TOKEN=...
+MINIFLUX_BASE_URL=http://localhost:8080
 ```
 
 ## Uruchamianie
 ```sh
 uv run main.py
+```
+
+Nadpisanie adresu Miniflux (CLI ma pierwszenstwo nad .env):
+```sh
+uv run main.py --base-url http://localhost:8080
 ```
 
 Fallback Playwright po bledzie Jiny:
