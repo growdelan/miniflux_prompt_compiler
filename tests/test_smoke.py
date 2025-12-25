@@ -17,6 +17,7 @@ from main import (
     label_for_tokens,
     run,
 )
+from miniflux_prompt_compiler.types import ProcessedItem
 
 
 class SmokeTest(unittest.TestCase):
@@ -128,8 +129,8 @@ class PromptBuildTest(unittest.TestCase):
     def test_build_prompt_wraps_items(self) -> None:
         prompt = build_prompt(
             [
-                {"title": "Artykul", "content": "Tresc A"},
-                {"title": "Video", "content": "Tresc B"},
+                ProcessedItem(title="Artykul", content="Tresc A"),
+                ProcessedItem(title="Video", content="Tresc B"),
             ]
         )
 
@@ -161,13 +162,13 @@ class PromptChunkingTest(unittest.TestCase):
         import main
 
         items = [
-            {"title": "A", "content": "X"},
-            {"title": "B", "content": "Y"},
-            {"title": "C", "content": "Z"},
+            ProcessedItem(title="A", content="X"),
+            ProcessedItem(title="B", content="Y"),
+            ProcessedItem(title="C", content="Z"),
         ]
 
         def fake_build_prompt(current):  # type: ignore[no-untyped-def]
-            return "|".join(item["title"] for item in current)
+            return "|".join(item.title for item in current)
 
         def fake_count_tokens(text: str, **kwargs) -> int:
             return len(text.split("|")) if text else 0
@@ -182,13 +183,13 @@ class PromptChunkingTest(unittest.TestCase):
         import main
 
         items = [
-            {"title": "A", "content": "X"},
-            {"title": "BIG", "content": "Y"},
-            {"title": "B", "content": "Z"},
+            ProcessedItem(title="A", content="X"),
+            ProcessedItem(title="BIG", content="Y"),
+            ProcessedItem(title="B", content="Z"),
         ]
 
         def fake_build_prompt(current):  # type: ignore[no-untyped-def]
-            return "|".join(item["title"] for item in current)
+            return "|".join(item.title for item in current)
 
         def fake_count_tokens(text: str, **kwargs) -> int:
             return 10 if "BIG" in text else len(text.split("|"))
