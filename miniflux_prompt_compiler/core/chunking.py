@@ -4,6 +4,9 @@ from miniflux_prompt_compiler.core.prompting import build_prompt
 from miniflux_prompt_compiler.core.tokenization import count_tokens
 from miniflux_prompt_compiler.types import ProcessedItem
 
+ANSI_RESET = "\033[0m"
+ANSI_RED = "\033[31m"
+
 
 def build_prompts_with_chunking(
     items: list[ProcessedItem], max_tokens: int, tokenizer: str = "auto"
@@ -28,7 +31,9 @@ def build_prompts_with_chunking(
             if prompt and count_tokens(prompt, tokenizer=tokenizer) <= max_tokens:
                 continue
 
-        logging.info("Item exceeds max token limit and was skipped")
+        logging.info(
+            "%sItem exceeds max token limit and was skipped%s", ANSI_RED, ANSI_RESET
+        )
         current = []
 
     if current:

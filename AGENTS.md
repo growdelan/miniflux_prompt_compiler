@@ -67,6 +67,9 @@
 - Bezpieczne parsowanie `entry_id` z logiem i pominieciem oznaczania `read` przy blednym ID.
 - Ujednolicenie logowania operacyjnego: `logging.info` zamiast `print()` poza trybem `--no-interactive`.
 - Dostosowanie testu trybu nieinteraktywnego do logowania INFO.
+- Kolorowanie etykiet `GPT-Instant` (zielony) i `GPT-Thinking` (zolty) w logach i stdout.
+- Czerwony komunikat o pominieciu wpisu przekraczajacego limit tokenow.
+- Aktualizacja testow pod kolory ANSI (strip kodow w asercjach).
 
 ## Decyzje architektoniczne
 - Brak zewnetrznych zaleznosci HTTP: uzywamy `urllib.request`, zeby utrzymac minimalizm.
@@ -95,6 +98,8 @@
 - Adaptery I/O rzucaja wyjatki domenowe zamiast ogolnych `RuntimeError`, bez zmiany zachowania funkcjonalnego.
 - `entry_id` nie blokuje przebiegu; przy blednym ID wpis nie jest oznaczany jako `read`.
 - Komunikaty operacyjne sa logowane przez `logging`, a `print()` pozostaje tylko do wypisywania promptow w trybie `--no-interactive`.
+- Kolorowanie informacji realizowane przez kody ANSI bez dodatkowych zaleznosci.
+- Testy ignoruja kody ANSI, sprawdzajac tresc komunikatow.
 
 ## Czego nie robimy na tym etapie
 - Brak asynchronicznosci, retry i rozbudowanej obslugi bledow sieciowych.
@@ -104,10 +109,11 @@
 - Brak zmian w zachowaniu funkcjonalnym i logice biznesowej; refactor jest strukturalny.
 - Brak walidacji ani normalizacji `MINIFLUX_BASE_URL` poza prostym `strip()`.
 - Brak wprowadzenia flag `--quiet` / `--verbose` (pozostawione na przyszlosc).
+- Brak przelacznika do wylaczenia kolorow w logach i stdout.
 
 ## Aktualny stan
-- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, konfiguracja `MINIFLUX_BASE_URL` (CLI/env/.env), wyjatki domenowe dla I/O, stabilne oznaczanie `read`, logowanie operacyjne przez `logging`.
-- co jest skonczone: milestone’y 0.5–15 z `spec.md` oznaczone jako zrealizowane.
+- co dziala: pobieranie `unread` z Miniflux, ekstrakcja Jina/YouTube, prompty z chunkowaniem po tokenach, etykiety tokenow, kolorowe etykiety i ostrzezenia ANSI, tryb interaktywny i `--no-interactive`, fallback Playwright (flaga `--playwright`) z logami, konfiguracja `MINIFLUX_BASE_URL` (CLI/env/.env), wyjatki domenowe dla I/O, stabilne oznaczanie `read`, logowanie operacyjne przez `logging`.
+- co jest skonczone: milestone’y 0.5–16 z `spec.md` oznaczone jako zrealizowane.
 - co jest nastepne: brak kolejnego milestone’u; kolejne kroki po nowym PRD/ustaleniach.
 
 ## Configuration & Secrets

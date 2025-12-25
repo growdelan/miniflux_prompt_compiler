@@ -28,6 +28,18 @@ from miniflux_prompt_compiler.core.url_classify import (
 )
 from miniflux_prompt_compiler.types import MinifluxEntry, ProcessedItem
 
+ANSI_RESET = "\033[0m"
+ANSI_GREEN = "\033[32m"
+ANSI_YELLOW = "\033[33m"
+
+
+def color_label(label: str) -> str:
+    if label == "GPT-Instant":
+        return f"{ANSI_GREEN}{label}{ANSI_RESET}"
+    if label == "GPT-Thinking":
+        return f"{ANSI_YELLOW}{label}{ANSI_RESET}"
+    return label
+
 
 def process_entry(
     entry: MinifluxEntry,
@@ -176,11 +188,11 @@ def run(
         else:
             token_count = count_tokens(prompts[0], tokenizer=tokenizer)
             label = label_for_tokens(token_count)
-            print(f"Prompt 1/1 ({token_count} tokenow - {label})")
+            print(f"Prompt 1/1 ({token_count} tokenow - {color_label(label)})")
             print(prompts[0])
         return f"{summary}; Tokens: {total_tokens}; Label: {total_label}"
 
-    logging.info("Total tokens: %s -> %s", total_tokens, total_label)
+    logging.info("Total tokens: %s -> %s", total_tokens, color_label(total_label))
     logging.info("Generated prompts: %s", len(prompts))
     if interactive:
         input_reader = input_reader or (lambda: input())
@@ -195,13 +207,16 @@ def run(
                 index,
                 len(prompts),
                 token_count,
-                label,
+                color_label(label),
             )
     else:
         for index, prompt in enumerate(prompts, start=1):
             token_count = count_tokens(prompt, tokenizer=tokenizer)
             label = label_for_tokens(token_count)
-            print(f"Prompt {index}/{len(prompts)} ({token_count} tokenow - {label})")
+            print(
+                f"Prompt {index}/{len(prompts)} "
+                f"({token_count} tokenow - {color_label(label)})"
+            )
             print(prompt)
 
     return (

@@ -19,6 +19,10 @@ from miniflux_prompt_compiler.core.url_classify import (
 from miniflux_prompt_compiler.types import ProcessedItem
 
 
+def strip_ansi(text: str) -> str:
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
 class SmokeTest(unittest.TestCase):
     def test_run_reads_token_from_env_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -208,7 +212,7 @@ class PromptChunkingTest(unittest.TestCase):
         self.assertEqual(prompts, ["A", "B"])
         self.assertTrue(
             any(
-                "Item exceeds max token limit and was skipped" in message
+                "Item exceeds max token limit and was skipped" in strip_ansi(message)
                 for message in logs.output
             )
         )
@@ -264,7 +268,7 @@ class InteractiveModeTest(unittest.TestCase):
                                 interactive=False,
                             )
 
-        stdout = buffer.getvalue()
+        stdout = strip_ansi(buffer.getvalue())
         self.assertEqual(clipboard_values, [])
         self.assertTrue(
             any("Total tokens: 70000 -> CHUNKING" in message for message in logs.output)
