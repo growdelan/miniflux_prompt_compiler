@@ -24,6 +24,7 @@
 ## Testing Guidelines
 - Testy używają `unittest` i są trzymane w `tests/` z nazwami `test_*.py`.
 - Smoke test nie wykonuje realnych wywołań HTTP; używa prostego `fetcher` stub.
+- Dla każdego milestone dodaj testy i uruchom `python -m unittest discover -s tests`.
 
 ## Commit & Pull Request Guidelines
 - Repozytorium nie ma jeszcze historii commitów, więc nie ma ustalonej konwencji wiadomości.
