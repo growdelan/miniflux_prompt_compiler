@@ -3,6 +3,7 @@ import re
 import tempfile
 import unittest
 import urllib.error
+import requests
 from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
@@ -346,7 +347,7 @@ class JinaTimeoutTest(unittest.TestCase):
         from miniflux_prompt_compiler.types import ContentFetchError
 
         with mock.patch.object(
-            jina.urllib.request, "urlopen", side_effect=TimeoutError("timeout")
+            jina.requests, "get", side_effect=requests.Timeout("timeout")
         ):
             with self.assertRaises(ContentFetchError):
                 jina.fetch_article_markdown("https://example.com", retries=1)

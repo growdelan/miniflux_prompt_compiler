@@ -1,9 +1,8 @@
 import logging
-import socket
 import time
-import urllib.error
-import urllib.request
 from collections.abc import Callable
+
+import requests
 
 from miniflux_prompt_compiler.types import ContentFetchError
 
@@ -14,9 +13,10 @@ def fetch_article_markdown(url: str, timeout: int = 15, retries: int = 3) -> str
     last_error: Exception | None = None
     for attempt in range(1, retries + 1):
         try:
-            with urllib.request.urlopen(request_url, timeout=timeout) as response:
-                content = response.read().decode("utf-8", errors="replace")
-        except (urllib.error.URLError, TimeoutError, socket.timeout) as exc:
+            response = requests.get(request_url, timeout=timeout)
+            response.raise_for_status()
+            content = response.text
+        except requests.RequestException as exc:
             last_error = exc
             if attempt < retries:
                 time.sleep(1)
