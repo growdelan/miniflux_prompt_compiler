@@ -184,7 +184,15 @@ def run(
 
     if len(prompts) == 1:
         if interactive:
+            input_reader = input_reader or (lambda: input())
+            logging.info("Press [Enter] to copy prompt 1/1")
+            input_reader()
             clipboard(prompts[0])
+            logging.info(
+                "Copied prompt 1/1 (%s tokenow - %s)",
+                total_tokens,
+                color_label(total_label),
+            )
         else:
             token_count = count_tokens(prompts[0], tokenizer=tokenizer)
             label = label_for_tokens(token_count)

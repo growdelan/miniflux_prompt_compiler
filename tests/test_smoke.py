@@ -63,6 +63,9 @@ class SmokeTest(unittest.TestCase):
             def fake_clipboard(text: str) -> None:
                 clipboard_values.append(text)
 
+            def fake_input_reader() -> None:
+                return None
+
             output = run(
                 env_path=env_path,
                 environ={},
@@ -71,6 +74,7 @@ class SmokeTest(unittest.TestCase):
                 youtube_fetcher=fake_youtube_fetcher,
                 marker=fake_marker,
                 clipboard=fake_clipboard,
+                input_reader=fake_input_reader,
             )
 
         self.assertIn(
@@ -220,6 +224,52 @@ class PromptChunkingTest(unittest.TestCase):
 
 
 class InteractiveModeTest(unittest.TestCase):
+    def test_run_interactive_waits_for_enter_single_prompt(self) -> None:
+        from miniflux_prompt_compiler import app as app_module
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text("MINIFLUX_API_TOKEN=abc123\n", encoding="utf-8")
+
+            def fake_fetcher(base_url: str, token: str) -> list[dict[str, object]]:
+                return [
+                    {"id": 1, "title": "Artykul", "url": "https://example.com/a"},
+                ]
+
+            def fake_article_fetcher(url: str) -> str:
+                return "content"
+
+            def fake_marker(base_url: str, token: str, entry_id: int) -> None:
+                return None
+
+            events: list[str] = []
+
+            def fake_input_reader() -> None:
+                events.append("input")
+
+            def fake_clipboard(text: str) -> None:
+                events.append(f"clipboard:{text}")
+
+            with mock.patch.object(
+                app_module,
+                "build_prompts_with_chunking",
+                return_value=["PROMPT1"],
+            ):
+                with mock.patch.object(app_module, "count_tokens", return_value=10):
+                    output = run(
+                        env_path=env_path,
+                        environ={},
+                        fetcher=fake_fetcher,
+                        article_fetcher=fake_article_fetcher,
+                        marker=fake_marker,
+                        clipboard=fake_clipboard,
+                        input_reader=fake_input_reader,
+                        interactive=True,
+                    )
+
+        self.assertEqual(events, ["input", "clipboard:PROMPT1"])
+        self.assertIn("Tokens: 10", output)
+
     def test_run_no_interactive_outputs_prompts(self) -> None:
         from miniflux_prompt_compiler import app as app_module
 
@@ -246,6 +296,9 @@ class InteractiveModeTest(unittest.TestCase):
 
             def fake_clipboard(text: str) -> None:
                 clipboard_values.append(text)
+
+            def fake_input_reader() -> None:
+                return None
 
             with mock.patch.object(
                 app_module,

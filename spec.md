@@ -14,7 +14,7 @@ Aplikacja CLI w Pythonie pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekst
 5. Sukcesy trafiają do promptu, porażki są logowane i pozostają jako `unread`.
 6. Po każdym sukcesie wpis jest oznaczany jako `read` (pojedyncze ID).
 7. Prompt jest liczony tokenowo, etykietowany i w razie potrzeby dzielony na chunki na granicy calych artykulow.
-8. Finalne prompty sa kopiowane do schowka macOS w trybie interaktywnym (po Enter); w trybie nieinteraktywnym trafiaja do stdout.
+8. Finalne prompty sa kopiowane do schowka macOS w trybie interaktywnym dopiero po Enter (rowniez gdy jest tylko jeden prompt); w trybie nieinteraktywnym trafiaja do stdout.
 9. Etykiety na podstawie liczby tokenow:
    - < 32 000: `GPT-Instant`
    - 32 000 – 49 999: `GPT-Thinking`

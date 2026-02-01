@@ -89,3 +89,8 @@ Zakres: kolorowanie ANSI w logach/wyjsciu oraz dostosowanie testow do kodow ANSI
 Cel: stabilne przetwarzanie timeoutow z `urllib` bez przerywania calego przebiegu.
 Definition of Done: `TimeoutError` i `socket.timeout` sa mapowane na `ContentFetchError`, co pozwala na retry i uruchomienie fallbacku Playwright; jest test jednostkowy.
 Zakres: obsluga timeoutow w adapterze Jina i test potwierdzajacy opakowanie wyjatku.
+
+## Milestone 18: Enter przed kopiowaniem pojedynczego promptu (zrealizowany)
+Cel: ujednolicenie trybu interaktywnego niezaleznie od liczby promptow.
+Definition of Done: w trybie interaktywnym kopiowanie nawet jednego promptu następuje dopiero po Enter; logi potwierdzaja kopiowanie; test to weryfikuje.
+Zakres: logika kopiowania w trybie interaktywnym oraz test smoke.
