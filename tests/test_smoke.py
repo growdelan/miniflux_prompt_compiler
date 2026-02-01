@@ -47,7 +47,7 @@ class SmokeTest(unittest.TestCase):
                     },
                 ]
 
-            def fake_article_fetcher(url: str) -> str:
+            def fake_article_fetcher(entry_id: int | None, url: str) -> str:
                 return "content"
 
             def fake_youtube_fetcher(video_id: str) -> str:
@@ -236,7 +236,7 @@ class InteractiveModeTest(unittest.TestCase):
                     {"id": 1, "title": "Artykul", "url": "https://example.com/a"},
                 ]
 
-            def fake_article_fetcher(url: str) -> str:
+            def fake_article_fetcher(entry_id: int | None, url: str) -> str:
                 return "content"
 
             def fake_marker(base_url: str, token: str, entry_id: int) -> None:
@@ -283,7 +283,7 @@ class InteractiveModeTest(unittest.TestCase):
                     {"id": 2, "title": "Video", "url": "https://youtu.be/abc123"},
                 ]
 
-            def fake_article_fetcher(url: str) -> str:
+            def fake_article_fetcher(entry_id: int | None, url: str) -> str:
                 return "content"
 
             def fake_youtube_fetcher(video_id: str) -> str:
@@ -336,6 +336,98 @@ class InteractiveModeTest(unittest.TestCase):
         self.assertIn("PROMPT2", stdout)
         self.assertIn("Prompts: 2", output)
         self.assertIn("Label: CHUNKING", output)
+
+
+class MinifluxFetchContentTest(unittest.TestCase):
+    def test_run_uses_miniflux_fetch_content_first(self) -> None:
+        from miniflux_prompt_compiler import app as app_module
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text("MINIFLUX_API_TOKEN=abc123\n", encoding="utf-8")
+
+            def fake_fetcher(base_url: str, token: str) -> list[dict[str, object]]:
+                return [{"id": 1, "title": "Artykul", "url": "https://example.com/a"}]
+
+            def fake_marker(base_url: str, token: str, entry_id: int) -> None:
+                return None
+
+            events: list[str] = []
+
+            def fake_input_reader() -> None:
+                events.append("input")
+
+            def fake_clipboard(text: str) -> None:
+                events.append(f"clipboard:{text}")
+
+            with mock.patch.object(
+                app_module, "fetch_entry_content", return_value="<p>HTML</p>"
+            ):
+                with mock.patch.object(
+                    app_module,
+                    "fetch_article_with_fallback",
+                    side_effect=AssertionError("Jina fallback should not be used."),
+                ):
+                    output = run(
+                        env_path=env_path,
+                        environ={},
+                        fetcher=fake_fetcher,
+                        marker=fake_marker,
+                        clipboard=fake_clipboard,
+                        input_reader=fake_input_reader,
+                    )
+
+        self.assertEqual(events[0], "input")
+        self.assertTrue(events[1].startswith("clipboard:"))
+        self.assertIn("<p>HTML</p>", events[1])
+        self.assertIn("Tokens:", output)
+
+    def test_run_falls_back_to_jina_when_miniflux_fails(self) -> None:
+        from miniflux_prompt_compiler import app as app_module
+        from miniflux_prompt_compiler.types import ContentFetchError
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text("MINIFLUX_API_TOKEN=abc123\n", encoding="utf-8")
+
+            def fake_fetcher(base_url: str, token: str) -> list[dict[str, object]]:
+                return [{"id": 1, "title": "Artykul", "url": "https://example.com/a"}]
+
+            def fake_marker(base_url: str, token: str, entry_id: int) -> None:
+                return None
+
+            events: list[str] = []
+
+            def fake_input_reader() -> None:
+                events.append("input")
+
+            def fake_clipboard(text: str) -> None:
+                events.append(f"clipboard:{text}")
+
+            with mock.patch.object(
+                app_module,
+                "fetch_entry_content",
+                side_effect=ContentFetchError("fail"),
+            ):
+                with mock.patch.object(
+                    app_module,
+                    "fetch_article_with_fallback",
+                    return_value="JINA",
+                ) as fallback_mock:
+                    output = run(
+                        env_path=env_path,
+                        environ={},
+                        fetcher=fake_fetcher,
+                        marker=fake_marker,
+                        clipboard=fake_clipboard,
+                        input_reader=fake_input_reader,
+                    )
+
+        self.assertEqual(events[0], "input")
+        self.assertTrue(events[1].startswith("clipboard:"))
+        self.assertIn("JINA", events[1])
+        self.assertTrue(fallback_mock.called)
+        self.assertIn("Tokens:", output)
 
 
 class PlaywrightFlagTest(unittest.TestCase):

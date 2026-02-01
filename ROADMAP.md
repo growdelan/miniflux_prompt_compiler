@@ -94,3 +94,8 @@ Zakres: obsluga timeoutow w adapterze Jina i test potwierdzajacy opakowanie wyja
 Cel: ujednolicenie trybu interaktywnego niezaleznie od liczby promptow.
 Definition of Done: w trybie interaktywnym kopiowanie nawet jednego promptu następuje dopiero po Enter; logi potwierdzaja kopiowanie; test to weryfikuje.
 Zakres: logika kopiowania w trybie interaktywnym oraz test smoke.
+
+## Milestone 19: Miniflux fetch-content jako pierwszy wybor (done)
+Cel: najpierw probowac pobrac tresc artykulu przez Miniflux `fetch-content`, a dopiero potem fallback Jina -> Playwright.
+Definition of Done: dla artykulow pierwsza proba to `GET /v1/entries/{entryID}/fetch-content?update_content=true`; przy bledzie lub pustej tresci nastepuje fallback do Jina, a po jej porazce (i tylko z flaga) do Playwright; logi wskazuja zrodlo tresci i powod fallbacku; testy pokrywaja sukces Miniflux oraz fallbacki.
+Zakres: nowy endpoint w adapterze Miniflux, zmiana kolejnosci ekstrakcji artykulow, logowanie zrodla tresci, testy i aktualizacja dokumentacji.
