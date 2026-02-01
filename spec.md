@@ -8,7 +8,7 @@ Aplikacja CLI w Pythonie pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekst
 2. Pobranie listy `unread` wpisów z Miniflux, zachowanie kolejności.
 3. Klasyfikacja linków: YouTube (youtube.com, youtu.be) z pominięciem `/shorts/`; pozostałe to artykuły.
 4. Ekstrakcja treści:
-   - Artykuły: `https://r.jina.ai/<URL>` z maks. 3 retry i timeoutem 10–15 s.
+   - Artykuły: najpierw `GET /v1/entries/{entryID}/fetch-content?update_content=true` (Miniflux); przy błędzie lub pustej treści fallback do `https://r.jina.ai/<URL>` (maks. 3 retry, timeout 10–15 s).
    - Fallback (opcjonalnie): Playwright uruchamiany tylko dla artykułów, gdy Jina rzuci wyjątek lub zwróci pustą treść, i tylko przy fladze `--playwright` (1 próba, timeout 20 s, headless).
    - YouTube: `youtube_transcript_api` z preferencją `en`, bez timestampów; brak transkrypcji to porażka.
 5. Sukcesy trafiają do promptu, porażki są logowane i pozostają jako `unread`.
@@ -33,6 +33,9 @@ Aplikacja CLI w Pythonie pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekst
 - Bledy pojedynczego wpisu nie przerywaja calego procesu.
 - Playwright nie wpływa na zachowanie bez flagi `--playwright`.
 - Chunkowanie uruchamia sie tylko po przekroczeniu limitu tokenow.
+
+## Decyzje techniczne
+- Priorytetem dla artykulow jest Miniflux `fetch-content`; dopiero przy bledzie lub pustej tresci uruchamiany jest fallback Jina, a nastepnie (opcjonalnie) Playwright.
 
 ## Roadmapa
 - Szczegoly milestone'ow i statusy znajduja sie w `ROADMAP.md`.

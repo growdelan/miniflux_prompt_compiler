@@ -6,6 +6,7 @@ from pathlib import Path
 from miniflux_prompt_compiler.adapters.clipboard import copy_to_clipboard
 from miniflux_prompt_compiler.adapters.jina import fetch_article_with_fallback
 from miniflux_prompt_compiler.adapters.miniflux_http import (
+    fetch_entry_content,
     fetch_unread_entries,
     mark_entry_read,
 )
@@ -26,7 +27,7 @@ from miniflux_prompt_compiler.core.url_classify import (
     is_youtube_shorts,
     is_youtube_url,
 )
-from miniflux_prompt_compiler.types import MinifluxEntry, ProcessedItem
+from miniflux_prompt_compiler.types import ContentFetchError, MinifluxEntry, ProcessedItem
 
 ANSI_RESET = "\033[0m"
 ANSI_GREEN = "\033[32m"
@@ -43,11 +44,18 @@ def color_label(label: str) -> str:
 
 def process_entry(
     entry: MinifluxEntry,
-    article_fetcher: Callable[[str], str],
+    article_fetcher: Callable[[int | None, str], str],
     youtube_fetcher: Callable[[str], str],
 ) -> tuple[bool, ProcessedItem | None]:
     title = (entry.get("title") or "").strip()
     url = (entry.get("url") or "").strip()
+    entry_id_raw = entry.get("id")
+    entry_id: int | None = None
+    if entry_id_raw is not None:
+        try:
+            entry_id = int(entry_id_raw)
+        except (TypeError, ValueError):
+            entry_id = None
     if not url:
         logging.info("Brak URL, pomijam wpis.")
         return False, None
@@ -66,7 +74,7 @@ def process_entry(
         return True, ProcessedItem(title=title, content=content)
 
     logging.info("Typ: artykul")
-    content = article_fetcher(url)
+    content = article_fetcher(entry_id, url)
     return True, ProcessedItem(title=title, content=content)
 
 
@@ -75,7 +83,7 @@ def run(
     environ: dict[str, str] | None = None,
     base_url: str | None = None,
     fetcher: Callable[[str, str], list[MinifluxEntry]] | None = None,
-    article_fetcher: Callable[[str], str] | None = None,
+    article_fetcher: Callable[[int | None, str], str] | None = None,
     youtube_fetcher: Callable[[str], str] | None = None,
     marker: Callable[[str, str, int], None] | None = None,
     clipboard: Callable[[str], None] | None = None,
@@ -108,15 +116,20 @@ def run(
     entries = fetcher(resolved_base_url, token)
     logging.info("Pobrano %d wpisow unread.", len(entries))
     if article_fetcher is None:
-        if use_playwright:
-            article_fetcher = lambda url: fetch_article_with_fallback(
-                url,
-                use_playwright=True,
-                fallback_fetcher=fetch_article_with_playwright,
-            )
-        else:
-            article_fetcher = lambda url: fetch_article_with_fallback(
-                url, use_playwright=False
+        fallback_fetcher = fetch_article_with_playwright if use_playwright else None
+
+        def article_fetcher(entry_id: int | None, url: str) -> str:
+            if entry_id is None:
+                logging.info("Brak ID wpisu, pomijam Miniflux fetch-content.")
+            else:
+                try:
+                    content = fetch_entry_content(resolved_base_url, token, entry_id)
+                    logging.info("Content source selected: miniflux")
+                    return content
+                except ContentFetchError as exc:
+                    logging.info("Miniflux fetch-content error (%s)", exc)
+            return fetch_article_with_fallback(
+                url, use_playwright=use_playwright, fallback_fetcher=fallback_fetcher
             )
     youtube_fetcher = youtube_fetcher or fetch_youtube_transcript
     marker = marker or mark_entry_read

@@ -30,6 +30,11 @@ Fallback Playwright po bledzie Jiny:
 uv run main.py --playwright
 ```
 
+Ekstrakcja artykulow:
+- najpierw Miniflux `fetch-content` (update_content=true),
+- potem Jina,
+- na koncu (opcjonalnie) Playwright po bledzie Jiny.
+
 Kontrola limitu tokenow i trybu liczenia:
 ```sh
 uv run main.py --max-tokens 50000 --tokenizer auto
