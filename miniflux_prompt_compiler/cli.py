@@ -46,6 +46,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--base-url",
         help="Nadpisz URL instancji Miniflux (ENV: MINIFLUX_BASE_URL).",
     )
+    parser.add_argument(
+        "--links",
+        action="store_true",
+        help="Zwracaj tylko linki do wpisow artykulowych bez pobierania tresci.",
+    )
     return parser.parse_args(argv)
 
 
@@ -59,6 +64,7 @@ def main() -> int:
             max_tokens=args.max_tokens,
             tokenizer=args.tokenizer,
             base_url=args.base_url,
+            links_only=args.links,
         )
     except RuntimeError as exc:
         logging.error(str(exc))

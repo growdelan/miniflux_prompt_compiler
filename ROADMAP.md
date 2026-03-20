@@ -99,3 +99,8 @@ Zakres: logika kopiowania w trybie interaktywnym oraz test smoke.
 Cel: najpierw probowac pobrac tresc artykulu przez Miniflux `fetch-content`, a dopiero potem fallback Jina -> Playwright.
 Definition of Done: dla artykulow pierwsza proba to `GET /v1/entries/{entryID}/fetch-content?update_content=true`; przy bledzie lub pustej tresci nastepuje fallback do Jina, a po jej porazce (i tylko z flaga) do Playwright; logi wskazuja zrodlo tresci i powod fallbacku; testy pokrywaja sukces Miniflux oraz fallbacki.
 Zakres: nowy endpoint w adapterze Miniflux, zmiana kolejnosci ekstrakcji artykulow, logowanie zrodla tresci, testy i aktualizacja dokumentacji.
+
+## Milestone 20: Tryb `--links` dla samych URL-i (zrealizowany)
+Cel: dodanie lekkiego trybu CLI, ktory zwraca tylko linki do wpisow artykulowych bez pobierania tresci.
+Definition of Done: flaga `--links` jest parsowana; w tym trybie aplikacja pobiera `unread`, filtruje wpisy nie-YouTube, zwraca same URL-e po jednym na linie, nie uruchamia Miniflux `fetch-content`, Jiny, Playwrighta ani transkrypcji YouTube; domyslny workflow bez flagi pozostaje bez zmian.
+Zakres: parsing nowej flagi CLI, osobna sciezka wykonania w `run()`, filtrowanie wpisow artykulowych, dostarczenie wyniku zgodnie z obecnym mechanizmem interactive / no-interactive oraz testy i dokumentacja.

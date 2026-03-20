@@ -447,6 +447,22 @@ class PlaywrightFlagTest(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         self.assertTrue(captured.get("use_playwright"))
 
+    def test_main_passes_links_flag(self) -> None:
+        from miniflux_prompt_compiler import cli
+
+        captured: dict[str, object] = {}
+
+        def fake_run(*args, **kwargs):  # type: ignore[no-untyped-def]
+            captured.update(kwargs)
+            return "ok"
+
+        with mock.patch.object(cli, "run", side_effect=fake_run):
+            with mock.patch.object(cli.sys, "argv", ["cli.py", "--links"]):
+                exit_code = cli.main()
+
+        self.assertEqual(exit_code, 0)
+        self.assertTrue(captured.get("links_only"))
+
     def test_main_passes_base_url(self) -> None:
         from miniflux_prompt_compiler import cli
 
@@ -464,6 +480,99 @@ class PlaywrightFlagTest(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertEqual(captured.get("base_url"), "http://example.com")
+
+
+class LinksModeTest(unittest.TestCase):
+    def test_run_links_only_copies_article_links_and_marks_them_read(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text("MINIFLUX_API_TOKEN=abc123\n", encoding="utf-8")
+
+            def fake_fetcher(base_url: str, token: str) -> list[dict[str, object]]:
+                return [
+                    {"id": 1, "title": "Artykul A", "url": "https://example.com/a"},
+                    {"id": 2, "title": "Video", "url": "https://youtu.be/abc123"},
+                    {"id": 3, "title": "Artykul B", "url": "https://example.com/b"},
+                ]
+
+            def forbidden_article_fetcher(entry_id: int | None, url: str) -> str:
+                raise AssertionError("Article fetcher should not be used in links mode.")
+
+            def forbidden_youtube_fetcher(video_id: str) -> str:
+                raise AssertionError("YouTube fetcher should not be used in links mode.")
+
+            marked: list[int] = []
+
+            def fake_marker(base_url: str, token: str, entry_id: int) -> None:
+                marked.append(entry_id)
+
+            events: list[str] = []
+
+            def fake_input_reader() -> None:
+                events.append("input")
+
+            def fake_clipboard(text: str) -> None:
+                events.append(f"clipboard:{text}")
+
+            output = run(
+                env_path=env_path,
+                environ={},
+                fetcher=fake_fetcher,
+                article_fetcher=forbidden_article_fetcher,
+                youtube_fetcher=forbidden_youtube_fetcher,
+                marker=fake_marker,
+                clipboard=fake_clipboard,
+                input_reader=fake_input_reader,
+                links_only=True,
+            )
+
+        self.assertEqual(marked, [1, 3])
+        self.assertEqual(
+            events,
+            ["input", "clipboard:https://example.com/a\nhttps://example.com/b"],
+        )
+        self.assertIn("Unread entries: 3; Success: 2; Failed: 0; Skipped: 1", output)
+        self.assertIn("Links: 2", output)
+
+    def test_run_links_only_no_interactive_outputs_raw_links(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text("MINIFLUX_API_TOKEN=abc123\n", encoding="utf-8")
+
+            def fake_fetcher(base_url: str, token: str) -> list[dict[str, object]]:
+                return [
+                    {"id": 1, "title": "Artykul A", "url": "https://example.com/a"},
+                    {
+                        "id": 2,
+                        "title": "Shorts",
+                        "url": "https://www.youtube.com/shorts/xyz987",
+                    },
+                    {"id": 3, "title": "Artykul B", "url": "https://example.com/b"},
+                ]
+
+            def fake_marker(base_url: str, token: str, entry_id: int) -> None:
+                return None
+
+            clipboard_values: list[str] = []
+
+            def fake_clipboard(text: str) -> None:
+                clipboard_values.append(text)
+
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                output = run(
+                    env_path=env_path,
+                    environ={},
+                    fetcher=fake_fetcher,
+                    marker=fake_marker,
+                    clipboard=fake_clipboard,
+                    interactive=False,
+                    links_only=True,
+                )
+
+        self.assertEqual(clipboard_values, [])
+        self.assertEqual(buffer.getvalue().strip(), "https://example.com/a\nhttps://example.com/b")
+        self.assertIn("Links: 2", output)
 
 
 class PlaywrightFallbackTest(unittest.TestCase):

@@ -46,6 +46,12 @@ Tryb nieinteraktywny (wypisuje prompty do stdout):
 uv run main.py --no-interactive
 ```
 
+Tryb samych linkow do newsow/artykulow (bez pobierania tresci, wpisy uwzglednione w wyniku sa oznaczane jako `read`):
+```sh
+uv run main.py --links
+uv run main.py --links --no-interactive
+```
+
 Instalacja przegladarek Playwright (wymagane przy uzyciu fallbacku):
 ```sh
 uv run playwright install
