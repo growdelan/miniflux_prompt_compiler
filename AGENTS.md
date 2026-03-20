@@ -1,38 +1,41 @@
-# Repository Guidelines
+# AGENTS.md
 
-## Project Structure & Module Organization
-- `main.py` jest cienkim wrapperem kompatybilnym z dotychczasowym uruchomieniem i re-eksportami.
-- `miniflux_prompt_compiler/cli.py` zawiera parsowanie argumentów i `main()`.
-- `miniflux_prompt_compiler/app.py` zawiera `run()` i orkiestrację przepływu.
-- `miniflux_prompt_compiler/core/` to czysta logika (prompt, tokeny, chunking, klasyfikacja URL).
-- `miniflux_prompt_compiler/adapters/` to integracje I/O (Miniflux HTTP, Jina, Playwright, YouTube, clipboard).
-- `miniflux_prompt_compiler/config.py` wczytuje `.env`.
-- `miniflux_prompt_compiler/types.py` zawiera kontrakty danych.
-- `pyproject.toml` definiuje metadane projektu i wymagania Pythona (`>=3.13`).
-- `README.md` opisuje cel narzędzia w jednym zdaniu.
-- `tests/test_smoke.py` zawiera prosty smoke test dla minimalnego przebiegu.
+Ten plik jest wyłącznie operacyjny: jak uruchamiać, testować i zarządzać zależnościami.
+Decyzje produktowe/architektura: `spec.md` / `ROADMAP.md` / `STATUS.md`.
 
-## Build, Test, and Development Commands
-- `python -m unittest discover -s tests` uruchamia smoke test.
+## Język
+- Komunikacja wyłącznie po polsku.
 
-## Coding Style & Naming Conventions
-- Projekt jest w Pythonie; trzymaj się stylu PEP 8.
-- Wcięcia: 4 spacje; brak tabulatorów.
-- Nazwy funkcji i zmiennych: `snake_case`; klasy: `CamelCase`.
-- Brak skonfigurowanych narzędzi formatowania/lintowania — jeśli je dodasz (np. `ruff`, `black`), zaktualizuj tę sekcję.
+## Środowisko i zależności
+- Używaj `uv` do zarządzania środowiskiem i zależnościami (nie twórz innych venv).
+- Dodawanie zależności: `uv add <pakiet>`.
+- Każda nowa zależność musi być uzasadniona w `spec.md` (sekcja „Decyzje techniczne”).
 
-## Testing Guidelines
-- Testy używają `unittest` i są trzymane w `tests/` z nazwami `test_*.py`.
-- Smoke test nie wykonuje realnych wywołań HTTP; używa prostego `fetcher` stub.
-- Dla każdego milestone dodaj testy i uruchom `python -m unittest discover -s tests`.
+## Uruchamianie
+- Preferuj uruchamianie przez `uv`:
+  - `uv run python -m <moduł_lub_pakiet>`
+- Alternatywnie (pojedynczy plik):
+  - `uv run <plik.py>`
+- Komenda uruchomienia musi być opisana w `README.md`.
 
-## Commit & Pull Request Guidelines
-- Repozytorium nie ma jeszcze historii commitów, więc nie ma ustalonej konwencji wiadomości.
-- Proponowany standard: krótki, opisowy tytuł i kontekst w treści (np. „Add Miniflux client stub”).
-- W PR uwzględnij: cel zmiany, zakres, kroki testów (lub informację o braku), oraz linki do powiązanych zadań/issue.
+## Testy
+- Framework: `unittest`.
+- Uruchomienie:
+  - `uv run python -m unittest discover -s tests -p "test_*.py"`
+- Smoke testy: bez IO (sieć/API/dysk); używaj stubów/fake’ów.
 
-## Configuration & Secrets
-- Nie przechowuj sekretów w repozytorium. Jeśli aplikacja będzie wymagać kluczy/API, trzymaj je w zmiennych środowiskowych i udokumentuj w README.
+## Konwencje repo
+- Kod w `src/` (albo w root tylko dla małych projektów); testy w `tests/`.
+- Nie dodawaj dodatkowych `.py` do root’a, jeśli używasz struktury `src/`.
+- Jeden entrypoint, opisany w `README.md`.
 
-## Source of Truth
-- Szczegoly funkcji, decyzji i milestone'ow: `spec.md`.
+## Sekrety i konfiguracja
+- Nie przechowuj sekretów w repo.
+- Używaj zmiennych środowiskowych i dokumentuj je w `README.md`.
+- Bez domyślnych kluczy i fallbacków.
+
+## Styl
+- Indentacja: 4 spacje.
+- Nazwy: moduły/funkcje `snake_case`, klasy `PascalCase`.
+- Kod prosty, bez „magii”; komentarze tylko przy nieoczywistej logice.
+
