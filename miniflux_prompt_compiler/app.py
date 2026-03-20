@@ -78,6 +78,23 @@ def process_entry(
     return True, ProcessedItem(title=title, content=content)
 
 
+def collect_article_links(entry: MinifluxEntry) -> tuple[bool, str | None]:
+    url = (entry.get("url") or "").strip()
+    if not url:
+        logging.info("Brak URL, pomijam wpis.")
+        return False, None
+
+    if is_youtube_url(url):
+        if is_youtube_shorts(url):
+            logging.info("Pomijam: YouTube Shorts")
+        else:
+            logging.info("Pomijam: YouTube")
+        return False, None
+
+    logging.info("Typ: artykul")
+    return True, url
+
+
 def run(
     env_path: Path = Path(".env"),
     environ: dict[str, str] | None = None,
@@ -92,6 +109,7 @@ def run(
     input_reader: Callable[[], str] | None = None,
     max_tokens: int = MAX_PROMPT_TOKENS,
     tokenizer: str = "auto",
+    links_only: bool = False,
 ) -> str:
     env = environ or os.environ
     file_env = load_env(env_path)
@@ -139,15 +157,24 @@ def run(
     failed = 0
     skipped = 0
     processed_items: list[ProcessedItem] = []
+    collected_links: list[str] = []
     for entry in entries:
-        try:
-            processed, item = process_entry(
-                entry, article_fetcher=article_fetcher, youtube_fetcher=youtube_fetcher
-            )
-        except RuntimeError as exc:
-            logging.info("Blad: %s", exc)
-            failed += 1
-            continue
+        if links_only:
+            processed, link = collect_article_links(entry)
+            item = None
+            if processed and link is not None:
+                collected_links.append(link)
+        else:
+            try:
+                processed, item = process_entry(
+                    entry,
+                    article_fetcher=article_fetcher,
+                    youtube_fetcher=youtube_fetcher,
+                )
+            except RuntimeError as exc:
+                logging.info("Blad: %s", exc)
+                failed += 1
+                continue
 
         if processed:
             entry_id_raw = entry.get("id")
@@ -179,6 +206,26 @@ def run(
                 processed_items.append(item)
         else:
             skipped += 1
+
+    if links_only:
+        summary = (
+            f"Unread entries: {len(entries)}; Success: {success}; "
+            f"Failed: {failed}; Skipped: {skipped}"
+        )
+        links_output = "\n".join(collected_links)
+        if not links_output:
+            logging.info("Brak przetworzonych wpisow, schowek nie jest nadpisywany.")
+            return summary
+
+        if interactive:
+            input_reader = input_reader or (lambda: input())
+            logging.info("Press [Enter] to copy links")
+            input_reader()
+            clipboard(links_output)
+            logging.info("Copied links (%s)", len(collected_links))
+        else:
+            print(links_output)
+        return f"{summary}; Links: {len(collected_links)}"
 
     full_prompt = build_prompt(processed_items)
     prompts = build_prompts_with_chunking(
