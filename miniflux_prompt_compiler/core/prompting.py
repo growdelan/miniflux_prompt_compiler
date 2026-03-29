@@ -2,72 +2,58 @@ from miniflux_prompt_compiler.types import ProcessedItem
 
 PROMPT = """
 <Cel>
-Twoim zadaniem jest analizowanie wielu artykułów dostarczonych w formacie:
-Tytuł: <tytuł>
-Treść: <pełna treść artykułu lub transkrypcji>
-
-Dla każdego artykułu przygotuj krótkie, trafne podsumowanie, które pozwoli szybko ocenić, czy materiał jest interesujący i wart dalszej uwagi.
+Streszczaj artykuły jak doświadczony bloger: ciekawie, konkretnie i „po ludzku”, tak aby w kilka sekund było wiadomo, o co chodzi.
 </Cel>
 
 <Instrukcje>
-- Przetwarzaj każdy artykuł osobno.
-- Dla każdego artykułu:
-  1. Zidentyfikuj główny temat i kluczowy przekaz.
-  2. Wyodrębnij najważniejsze informacje (fakty, wnioski, unikalne elementy).
-  3. Oceń potencjalną wartość/ciekawość treści dla czytelnika.
+Dla każdego artykułu:
 
-- Stosuj zwięzły, informacyjny styl — unikaj zbędnych opisów.
-- Nie powtarzaj pełnej treści artykułu.
-- Jeśli artykuł jest mało wartościowy lub powtarzalny, jasno to zaznacz.
-- Jeśli brakuje danych, oznacz to jako [brak informacji].
+1. Wyciągnij sedno (o czym jest i co z tego wynika).
+2. Wybierz tylko najciekawsze i najbardziej konkretne informacje.
+3. ZAWSZE uwzględniaj:
+   - liczby (jeśli są dostępne),
+   - porównania (np. wzrost/spadek, lepsze/gorsze, vs inne rozwiązania),
+   - konkretne przykłady.
+4. Pisz naturalnie, jak bloger — unikaj sztywnego, raportowego tonu.
+5. Maksymalnie 5 punktów na artykuł (mniej jeśli wystarczy).
+6. Jeśli artykuł jest słaby lub „o niczym” — napisz to wprost.
+7. Nie wymyślaj danych — jeśli ich brak, pomiń zamiast zgadywać.
 
-<default_follow_through_policy>
-- Jeśli dane są kompletne, wykonaj analizę bez zadawania pytań.
-- Nie przerywaj pracy — podsumuj wszystkie artykuły.
-</default_follow_through_policy>
+<styl_pisania>
+- Krótko, dynamicznie, konkretnie
+- Bez lania wody
+- Bez korporacyjnego tonu
+- Każdy punkt = jedna myśl + konkret
+</styl_pisania>
 
-<completeness_contract>
-- Każdy artykuł musi mieć osobne podsumowanie.
-- Żaden artykuł nie może zostać pominięty.
-</completeness_contract>
-
-<verification_loop>
-- Sprawdź, czy każde podsumowanie:
-  - jest zrozumiałe bez czytania artykułu,
-  - zawiera najważniejsze informacje,
-  - pozwala ocenić atrakcyjność treści.
-</verification_loop>
+<output_contract>
+- Każdy artykuł = jedna sekcja
+- Maksymalnie 5 punktów
+- Każdy punkt: 1–2 zdania
+- Zawieraj liczby i porównania, jeśli istnieją w tekście
+</output_contract>
 </Instrukcje>
 
 <Kontekst>
-Model powinien działać zgodnie z najlepszymi praktykami:
-- tworzyć odpowiedzi zwięzłe, ale bogate w informacje,
-- przestrzegać jasno określonego formatu wyjścia,
-- traktować zadanie jako zakończone dopiero po analizie wszystkich elementów,
-- unikać nadmiarowego tekstu i skupić się na wartości informacyjnej.
+Prompt ma działać w prostym użyciu (wklejanie do ChatGPT, bez agenta), więc musi być:
+- krótki,
+- jednoznaczny,
+- nastawiony na jakość treści, nie na proces.
 
-Podsumowania mają służyć szybkiemu przeglądowi wielu treści (np. research, selekcja artykułów, monitoring informacji).
+Zgodnie z dobrymi praktykami:
+- jasny format wyjścia,
+- ograniczona długość,
+- nacisk na konkret i informację zamiast ogólników.
 </Kontekst>
 
 <Format_odpowiedzi>
-Dla każdego artykułu użyj dokładnie tej struktury:
-
-### Artykuł X
 **Tytuł:** <tytuł>
 
-**O czym jest:**
-<1-2 zdania streszczenia tematu>
-
-**Najważniejsze punkty:**
-- <punkt 1>
-- <punkt 2>
-- <punkt 3>
-
-**Czy warto przeczytać?:**
-<krótka ocena: TAK / NIE / MOŻE + jedno zdanie uzasadnienia>
-
-Zachowaj kolejność artykułów wejściowych.
-Nie dodawaj żadnych dodatkowych sekcji ani komentarzy.
+- <najważniejszy insight + liczba / konkret / porównanie>
+- <drugi ważny punkt>
+- <trzeci ważny punkt>
+- <opcjonalnie kolejny>
+- <opcjonalnie kolejny>
 </Format_odpowiedzi>
 """
 
