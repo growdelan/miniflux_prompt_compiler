@@ -104,3 +104,8 @@ Zakres: nowy endpoint w adapterze Miniflux, zmiana kolejnosci ekstrakcji artykul
 Cel: dodanie lekkiego trybu CLI, ktory zwraca tylko linki do wpisow artykulowych bez pobierania tresci.
 Definition of Done: flaga `--links` jest parsowana; w tym trybie aplikacja pobiera `unread`, filtruje wpisy nie-YouTube, zwraca same URL-e po jednym na linie, nie uruchamia Miniflux `fetch-content`, Jiny, Playwrighta ani transkrypcji YouTube; domyslny workflow bez flagi pozostaje bez zmian.
 Zakres: parsing nowej flagi CLI, osobna sciezka wykonania w `run()`, filtrowanie wpisow artykulowych, dostarczenie wyniku zgodnie z obecnym mechanizmem interactive / no-interactive oraz testy i dokumentacja.
+
+## Milestone 21: Oczyszczanie HTML z Miniflux przez trafilatura (zrealizowany)
+Cel: poprawa jakosci tresci artykulow przez normalizacje HTML z Miniflux do markdown i usuniecie powtarzalnego noise.
+Definition of Done: dla sukcesu Miniflux `fetch-content` tresc przechodzi przez `trafilatura` (`output_format=markdown`) oraz cleanup linii noise; finalny output ma format `# {title}` + tresc; gdy wynik jest pusty zwracany jest placeholder; fallback Jina -> Playwright oraz tryb `--links` i YouTube pozostaja bez zmian; testy przechodza.
+Zakres: dodanie zaleznosci `trafilatura`, integracja konwersji i cleanupu w sciezce artykulowej Miniflux, testy jednostkowe/scenariuszowe, aktualizacja `spec.md` i `README.md` jesli zmienia sie wymaganie uruchomieniowe.

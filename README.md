@@ -6,6 +6,7 @@ Narzędzie, które automatycznie zamienia nieprzeczytane RSS-y i filmy z YouTube
 - Python 3.13+
 - `uv`
 - `playwright` (opcjonalnie, tylko dla fallback)
+- `trafilatura` (normalizacja HTML z Miniflux do markdown)
 
 ## Konfiguracja
 Utworz `.env` w katalogu projektu:
@@ -32,6 +33,7 @@ uv run main.py --playwright
 
 Ekstrakcja artykulow:
 - najpierw Miniflux `fetch-content` (update_content=true),
+- przy sukcesie Miniflux: konwersja HTML -> markdown przez `trafilatura` oraz cleanup powtarzalnego noise,
 - potem Jina,
 - na koncu (opcjonalnie) Playwright po bledzie Jiny.
 
@@ -59,5 +61,5 @@ uv run playwright install
 
 ## Testy
 ```sh
-python -m unittest discover -s tests
+uv run python -m unittest discover -s tests -p "test_*.py"
 ```

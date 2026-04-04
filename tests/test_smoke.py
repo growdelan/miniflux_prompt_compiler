@@ -365,21 +365,28 @@ class MinifluxFetchContentTest(unittest.TestCase):
             ):
                 with mock.patch.object(
                     app_module,
-                    "fetch_article_with_fallback",
-                    side_effect=AssertionError("Jina fallback should not be used."),
-                ):
-                    output = run(
-                        env_path=env_path,
-                        environ={},
-                        fetcher=fake_fetcher,
-                        marker=fake_marker,
-                        clipboard=fake_clipboard,
-                        input_reader=fake_input_reader,
-                    )
+                    "html_to_clean_markdown",
+                    return_value="# Artykul\n\nTresc markdown",
+                ) as normalize_mock:
+                    with mock.patch.object(
+                        app_module,
+                        "fetch_article_with_fallback",
+                        side_effect=AssertionError("Jina fallback should not be used."),
+                    ):
+                        output = run(
+                            env_path=env_path,
+                            environ={},
+                            fetcher=fake_fetcher,
+                            marker=fake_marker,
+                            clipboard=fake_clipboard,
+                            input_reader=fake_input_reader,
+                        )
 
         self.assertEqual(events[0], "input")
         self.assertTrue(events[1].startswith("clipboard:"))
-        self.assertIn("<p>HTML</p>", events[1])
+        self.assertIn("# Artykul", events[1])
+        self.assertIn("Tresc markdown", events[1])
+        normalize_mock.assert_called_once_with(title="Artykul", html="<p>HTML</p>")
         self.assertIn("Tokens:", output)
 
     def test_run_falls_back_to_jina_when_miniflux_fails(self) -> None:
@@ -605,6 +612,40 @@ class JinaTimeoutTest(unittest.TestCase):
         ):
             with self.assertRaises(ContentFetchError):
                 jina.fetch_article_markdown("https://example.com", retries=1)
+
+
+class TrafilaturaCleanupTest(unittest.TestCase):
+    def test_cleanup_markdown_removes_noise_and_collapses_blank_lines(self) -> None:
+        from miniflux_prompt_compiler.adapters.trafilatura_markdown import (
+            cleanup_markdown,
+        )
+
+        markdown = (
+            "follow us\n"
+            "Wstep\n\n\n"
+            "Read more news on\n"
+            "Akapit merytoryczny\n"
+            "Catch all the us news\n\n\n\n"
+            "Koniec"
+        )
+        cleaned = cleanup_markdown(markdown)
+        self.assertNotIn("follow us", cleaned.lower())
+        self.assertNotIn("read more news on", cleaned.lower())
+        self.assertNotIn("catch all the us news", cleaned.lower())
+        self.assertIn("Akapit merytoryczny", cleaned)
+        self.assertNotIn("\n\n\n", cleaned)
+
+    def test_html_to_clean_markdown_uses_placeholder_when_empty(self) -> None:
+        from miniflux_prompt_compiler.adapters import trafilatura_markdown
+
+        with mock.patch.object(trafilatura_markdown.trafilatura, "extract", return_value=None):
+            output = trafilatura_markdown.html_to_clean_markdown(
+                title="Tytul",
+                html="<html></html>",
+            )
+
+        self.assertIn("# Tytul", output)
+        self.assertIn("_Nie udało się wyciągnąć treści artykułu_", output)
 
 if __name__ == "__main__":
     unittest.main()

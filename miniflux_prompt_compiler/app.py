@@ -13,6 +13,9 @@ from miniflux_prompt_compiler.adapters.miniflux_http import (
 from miniflux_prompt_compiler.adapters.playwright_fetch import (
     fetch_article_with_playwright,
 )
+from miniflux_prompt_compiler.adapters.trafilatura_markdown import (
+    html_to_clean_markdown,
+)
 from miniflux_prompt_compiler.adapters.youtube import fetch_youtube_transcript
 from miniflux_prompt_compiler.config import load_env
 from miniflux_prompt_compiler.core.chunking import build_prompts_with_chunking
@@ -44,7 +47,7 @@ def color_label(label: str) -> str:
 
 def process_entry(
     entry: MinifluxEntry,
-    article_fetcher: Callable[[int | None, str], str],
+    article_fetcher: Callable[[int | None, str], str | tuple[str, str]],
     youtube_fetcher: Callable[[str], str],
 ) -> tuple[bool, ProcessedItem | None]:
     title = (entry.get("title") or "").strip()
@@ -74,7 +77,14 @@ def process_entry(
         return True, ProcessedItem(title=title, content=content)
 
     logging.info("Typ: artykul")
-    content = article_fetcher(entry_id, url)
+    content_result = article_fetcher(entry_id, url)
+    source = "unknown"
+    if isinstance(content_result, tuple):
+        content, source = content_result
+    else:
+        content = content_result
+    if source == "miniflux":
+        content = html_to_clean_markdown(title=title, html=content)
     return True, ProcessedItem(title=title, content=content)
 
 
@@ -100,7 +110,7 @@ def run(
     environ: dict[str, str] | None = None,
     base_url: str | None = None,
     fetcher: Callable[[str, str], list[MinifluxEntry]] | None = None,
-    article_fetcher: Callable[[int | None, str], str] | None = None,
+    article_fetcher: Callable[[int | None, str], str | tuple[str, str]] | None = None,
     youtube_fetcher: Callable[[str], str] | None = None,
     marker: Callable[[str, str, int], None] | None = None,
     clipboard: Callable[[str], None] | None = None,
@@ -136,19 +146,19 @@ def run(
     if article_fetcher is None:
         fallback_fetcher = fetch_article_with_playwright if use_playwright else None
 
-        def article_fetcher(entry_id: int | None, url: str) -> str:
+        def article_fetcher(entry_id: int | None, url: str) -> tuple[str, str]:
             if entry_id is None:
                 logging.info("Brak ID wpisu, pomijam Miniflux fetch-content.")
             else:
                 try:
                     content = fetch_entry_content(resolved_base_url, token, entry_id)
                     logging.info("Content source selected: miniflux")
-                    return content
+                    return content, "miniflux"
                 except ContentFetchError as exc:
                     logging.info("Miniflux fetch-content error (%s)", exc)
             return fetch_article_with_fallback(
                 url, use_playwright=use_playwright, fallback_fetcher=fallback_fetcher
-            )
+            ), "fallback"
     youtube_fetcher = youtube_fetcher or fetch_youtube_transcript
     marker = marker or mark_entry_read
     clipboard = clipboard or copy_to_clipboard
