@@ -2,58 +2,51 @@ from miniflux_prompt_compiler.types import ProcessedItem
 
 PROMPT = """
 <Cel>
-Streszczaj artykuły jak doświadczony bloger: ciekawie, konkretnie i „po ludzku”, tak aby w kilka sekund było wiadomo, o co chodzi.
+Streszczaj artykuły jak doświadczony bloger: ciekawie, konkretnie i naturalnie, tak aby czytelnik w kilka sekund zrozumiał, o co chodzi, co jest najważniejsze i dlaczego warto zwrócić na to uwagę.
 </Cel>
 
 <Instrukcje>
-Dla każdego artykułu:
+Dla każdego artykułu przygotuj krótkie, treściwe podsumowanie.
 
-1. Wyciągnij sedno (o czym jest i co z tego wynika).
-2. Wybierz tylko najciekawsze i najbardziej konkretne informacje.
-3. ZAWSZE uwzględniaj:
-   - liczby (jeśli są dostępne),
-   - porównania (np. wzrost/spadek, lepsze/gorsze, vs inne rozwiązania),
-   - konkretne przykłady.
-4. Pisz naturalnie, jak bloger — unikaj sztywnego, raportowego tonu.
-5. Maksymalnie 5 punktów na artykuł (mniej jeśli wystarczy).
-6. Jeśli artykuł jest słaby lub „o niczym” — napisz to wprost.
-7. Nie wymyślaj danych — jeśli ich brak, pomiń zamiast zgadywać.
+Skup się na efekcie końcowym:
+- pokaż główną myśl artykułu,
+- wybierz tylko najciekawsze i najbardziej konkretne informacje,
+- uwzględnij liczby, porównania i przykłady, jeśli występują w tekście,
+- pisz naturalnie, dynamicznie i „po ludzku”,
+- unikaj tonu raportowego, korporacyjnego i ogólników.
 
-<styl_pisania>
-- Krótko, dynamicznie, konkretnie
-- Bez lania wody
-- Bez korporacyjnego tonu
-- Każdy punkt = jedna myśl + konkret
-</styl_pisania>
+Nie wymyślaj danych, liczb ani wniosków. Jeśli czegoś nie ma w artykule, pomiń to zamiast zgadywać.
 
-<output_contract>
-- Każdy artykuł = jedna sekcja
-- Maksymalnie 5 punktów
-- Każdy punkt: 1–2 zdania
-- Zawieraj liczby i porównania, jeśli istnieją w tekście
-</output_contract>
+Jeśli artykuł jest słaby, ogólnikowy albo nie wnosi nic konkretnego, napisz to wprost i krótko wyjaśnij dlaczego.
+
+Każdy punkt powinien zawierać jedną myśl oraz konkretną informację. Preferuj krótkie zdania.
 </Instrukcje>
 
 <Kontekst>
-Prompt ma działać w prostym użyciu (wklejanie do ChatGPT, bez agenta), więc musi być:
-- krótki,
-- jednoznaczny,
-- nastawiony na jakość treści, nie na proces.
+Prompt jest przeznaczony do prostego użycia w ChatGPT: użytkownik wkleja jeden lub więcej artykułów i oczekuje gotowego, czytelnego streszczenia.
 
-Zgodnie z dobrymi praktykami:
-- jasny format wyjścia,
-- ograniczona długość,
-- nacisk na konkret i informację zamiast ogólników.
+Priorytetem jest jakość treści, a nie opisywanie procesu. Odpowiedź ma być krótka, skanowalna i przydatna dla osoby, która chce szybko ocenić sens artykułu.
+
+Styl: blogowy, konkretny, bez lania wody.
 </Kontekst>
 
 <Format_odpowiedzi>
-**Tytuł:** <tytuł>
+Dla każdego artykułu użyj poniższego formatu:
 
-- <najważniejszy insight + liczba / konkret / porównanie>
-- <drugi ważny punkt>
-- <trzeci ważny punkt>
-- <opcjonalnie kolejny>
-- <opcjonalnie kolejny>
+**Tytuł:** <tytuł artykułu lub krótki opis tematu, jeśli tytułu brak>
+
+- <najważniejszy insight z artykułu; dodaj liczbę, konkret lub porównanie, jeśli występuje>
+- <drugi najważniejszy punkt>
+- <trzeci najważniejszy punkt>
+- <opcjonalnie czwarty punkt, tylko jeśli wnosi coś konkretnego>
+- <opcjonalnie piąty punkt, tylko jeśli wnosi coś konkretnego>
+
+Zasady formatu:
+- maksymalnie 5 punktów na artykuł,
+- każdy punkt ma 1–2 zdania,
+- nie dodawaj podsumowania na końcu, jeśli nie jest potrzebne,
+- nie rozwlekaj odpowiedzi,
+- jeśli artykuł jest słaby, zamiast standardowych punktów napisz krótko: „Ten artykuł jest mało konkretny, bo...” i podaj 1–3 powody.
 </Format_odpowiedzi>
 """
 
