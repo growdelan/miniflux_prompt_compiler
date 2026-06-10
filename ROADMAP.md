@@ -109,3 +109,8 @@ Zakres: parsing nowej flagi CLI, osobna sciezka wykonania w `run()`, filtrowanie
 Cel: poprawa jakosci tresci artykulow przez normalizacje HTML z Miniflux do markdown i usuniecie powtarzalnego noise.
 Definition of Done: dla sukcesu Miniflux `fetch-content` tresc przechodzi przez `trafilatura` (`output_format=markdown`) oraz cleanup linii noise; finalny output ma format `# {title}` + tresc; gdy wynik jest pusty zwracany jest placeholder; fallback Jina -> Playwright oraz tryb `--links` i YouTube pozostaja bez zmian; testy przechodza.
 Zakres: dodanie zaleznosci `trafilatura`, integracja konwersji i cleanupu w sciezce artykulowej Miniflux, testy jednostkowe/scenariuszowe, aktualizacja `spec.md` i `README.md` jesli zmienia sie wymaganie uruchomieniowe.
+
+## Milestone 22: Poprawny endpoint oznaczania wpisow jako read (zrealizowany)
+Cel: usuniecie z integracji Miniflux probnego requestu `PUT /v1/entries?status=read`, ktory generowal `400 Bad Request` przed poprawnym fallbackiem.
+Definition of Done: `mark_entry_read()` uzywa od razu oficjalnego `PUT /v1/entries` z payloadem `entry_ids` + `status`; nie wykonuje alternatywnych prob generujacych oczekiwane bledy; test jednostkowy weryfikuje metode, URL i body; pelny zestaw testow przechodzi.
+Zakres: adapter Miniflux HTTP, test kontraktu oznaczania `read`, PRD 003 oraz aktualizacja `spec.md`, `ROADMAP.md`, `STATUS.md` i README.

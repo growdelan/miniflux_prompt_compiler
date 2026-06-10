@@ -29,51 +29,21 @@ def fetch_unread_entries(
 def mark_entry_read(
     base_url: str, token: str, entry_id: int, timeout: int = 10
 ) -> None:
-    # Decyzja: probujemy kilka wariantow API (PUT/POST i inny endpoint),
-    # bo instalacje Miniflux moga roznic sie obsluga tej operacji.
-    attempts = [
-        (
-            "PUT",
-            f"{base_url.rstrip('/')}/v1/entries?status=read",
-            {"entry_ids": [entry_id]},
-        ),
-        (
-            "PUT",
-            f"{base_url.rstrip('/')}/v1/entries",
-            {"entry_ids": [entry_id], "status": "read"},
-        ),
-        (
-            "POST",
-            f"{base_url.rstrip('/')}/v1/entries?status=read",
-            {"entry_ids": [entry_id]},
-        ),
-        (
-            "PUT",
-            f"{base_url.rstrip('/')}/v1/entries/{entry_id}",
-            {"status": "read"},
-        ),
-    ]
-    for index, (method, url, payload_dict) in enumerate(attempts):
-        payload = json.dumps(payload_dict).encode("utf-8")
-        request = urllib.request.Request(
-            url,
-            data=payload,
-            method=method,
-            headers={"X-Auth-Token": token, "Content-Type": "application/json"},
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=timeout):
-                return
-        except urllib.error.HTTPError as exc:
-            if exc.code in {400, 404} and index < len(attempts) - 1:
-                continue
-            raise MinifluxError(
-                f"Nie udalo sie oznaczyc wpisu {entry_id} jako read: {exc}"
-            ) from exc
-        except urllib.error.URLError as exc:
-            raise MinifluxError(
-                f"Nie udalo sie oznaczyc wpisu {entry_id} jako read: {exc}"
-            ) from exc
+    url = f"{base_url.rstrip('/')}/v1/entries"
+    payload = json.dumps({"entry_ids": [entry_id], "status": "read"}).encode("utf-8")
+    request = urllib.request.Request(
+        url,
+        data=payload,
+        method="PUT",
+        headers={"X-Auth-Token": token, "Content-Type": "application/json"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout):
+            return
+    except (urllib.error.HTTPError, urllib.error.URLError) as exc:
+        raise MinifluxError(
+            f"Nie udalo sie oznaczyc wpisu {entry_id} jako read: {exc}"
+        ) from exc
 
 
 def fetch_entry_content(

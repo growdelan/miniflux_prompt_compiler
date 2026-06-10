@@ -13,7 +13,7 @@ Aplikacja CLI w Pythonie pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekst
    - Fallback (opcjonalnie): Playwright uruchamiany tylko dla artykułów, gdy Jina rzuci wyjątek lub zwróci pustą treść, i tylko przy fladze `--playwright` (1 próba, timeout 20 s, headless).
    - YouTube: `youtube_transcript_api` z preferencją `en`, bez timestampów; brak transkrypcji to porażka.
 6. Sukcesy trafiają do promptu, porażki są logowane i pozostają jako `unread`.
-7. Po każdym sukcesie wpis jest oznaczany jako `read` (pojedyncze ID).
+7. Po każdym sukcesie wpis jest oznaczany jako `read` przez oficjalny endpoint Miniflux `PUT /v1/entries` z payloadem `entry_ids` + `status`.
 8. Prompt jest liczony tokenowo, etykietowany i w razie potrzeby dzielony na chunki na granicy calych artykulow.
 9. Finalne prompty sa kopiowane do schowka macOS w trybie interaktywnym dopiero po Enter (rowniez gdy jest tylko jeden prompt); w trybie nieinteraktywnym trafiaja do stdout. W trybie `--links` ta sama logika dostarczenia wyniku dotyczy jednego bloku tekstu zawierającego same URL-e.
 10. Etykiety na podstawie liczby tokenow:
@@ -36,11 +36,13 @@ Aplikacja CLI w Pythonie pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekst
 - Chunkowanie uruchamia sie tylko po przekroczeniu limitu tokenow.
 - Tryb `--links` omija ekstrakcję treści, tokenizację i chunkowanie; wykorzystuje istniejącą klasyfikację URL do pominięcia wpisów YouTube.
 - Konwersja `trafilatura` + cleanup dotyczy tylko ścieżki sukcesu Miniflux `fetch-content`; fallbacki Jina/Playwright pozostają bez zmian.
+- Oznaczanie wpisu jako `read` korzysta z jednego oficjalnego endpointu Update Entries; adapter nie wykonuje probnych wariantow API, ktore generuja oczekiwane bledy `400`.
 
 ## Decyzje techniczne
 - Priorytetem dla artykulow jest Miniflux `fetch-content`; dopiero przy bledzie lub pustej tresci uruchamiany jest fallback Jina, a nastepnie (opcjonalnie) Playwright.
 - Tryb `--links` zwraca wyłącznie URL-e wpisów sklasyfikowanych jako artykuły (nie-YouTube) i nie uruchamia żadnego mechanizmu pozyskiwania treści ani transkrypcji (dotyczy PRD: `001-links-only-mode-prd.md`).
 - Dla sukcesu Miniflux `fetch-content` odpowiedź HTML jest normalizowana do markdown przez `trafilatura` i czyszczona z portalowego noise; fallbacki Jina/Playwright pozostają bez tej normalizacji (dotyczy PRD: `002-trafilatura-miniflux-markdown-cleanup-prd.md`).
+- Do oznaczania sukcesow jako `read` uzywany jest `PUT /v1/entries` z JSON-em `{"entry_ids": [id], "status": "read"}`; nie stosujemy fallbackow do alternatywnych endpointow, bo pierwszy historyczny wariant generowal niepotrzebne `400 Bad Request` w Miniflux (dotyczy PRD: `003-miniflux-read-status-endpoint-prd.md`).
 
 ## Roadmapa
 - Szczegoly milestone'ow i statusy znajduja sie w `ROADMAP.md`.

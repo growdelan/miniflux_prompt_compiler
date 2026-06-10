@@ -89,11 +89,11 @@ class SmokeTest(unittest.TestCase):
         self.assertEqual(captured_base_urls, ["http://miniflux.local"])
 
 
-class MarkReadFallbackTest(unittest.TestCase):
-    def test_mark_entry_read_falls_back_on_400(self) -> None:
+class MarkReadTest(unittest.TestCase):
+    def test_mark_entry_read_uses_update_entries_endpoint(self) -> None:
         from miniflux_prompt_compiler.adapters.miniflux_http import mark_entry_read
 
-        calls: list[tuple[str, str]] = []
+        calls: list[tuple[str, str, bytes | None]] = []
 
         class DummyResponse:
             def __enter__(self) -> "DummyResponse":
@@ -103,11 +103,7 @@ class MarkReadFallbackTest(unittest.TestCase):
                 return None
 
         def fake_urlopen(request, timeout=10):  # type: ignore[no-untyped-def]
-            calls.append((request.method, request.full_url))
-            if len(calls) == 1:
-                raise urllib.error.HTTPError(
-                    request.full_url, 400, "Bad Request", hdrs=None, fp=None
-                )
+            calls.append((request.method, request.full_url, request.data))
             return DummyResponse()
 
         with mock.patch("urllib.request.urlopen", side_effect=fake_urlopen):
@@ -116,8 +112,11 @@ class MarkReadFallbackTest(unittest.TestCase):
         self.assertEqual(
             calls,
             [
-                ("PUT", "http://example.com/v1/entries?status=read"),
-                ("PUT", "http://example.com/v1/entries"),
+                (
+                    "PUT",
+                    "http://example.com/v1/entries",
+                    b'{"entry_ids": [123], "status": "read"}',
+                ),
             ],
         )
 

@@ -37,6 +37,8 @@ Ekstrakcja artykulow:
 - potem Jina,
 - na koncu (opcjonalnie) Playwright po bledzie Jiny.
 
+Po udanym przetworzeniu wpis jest oznaczany jako `read` przez oficjalny endpoint Miniflux `PUT /v1/entries`.
+
 Kontrola limitu tokenow i trybu liczenia:
 ```sh
 uv run main.py --max-tokens 50000 --tokenizer auto
