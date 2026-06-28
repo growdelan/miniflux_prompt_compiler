@@ -338,6 +338,14 @@ class InteractiveModeTest(unittest.TestCase):
 
 
 class MinifluxFetchContentTest(unittest.TestCase):
+    def test_fetch_entry_content_timeout_is_wrapped(self) -> None:
+        from miniflux_prompt_compiler.adapters.miniflux_http import fetch_entry_content
+        from miniflux_prompt_compiler.types import ContentFetchError
+
+        with mock.patch("urllib.request.urlopen", side_effect=TimeoutError("timed out")):
+            with self.assertRaises(ContentFetchError):
+                fetch_entry_content("http://example.com", "token", 123)
+
     def test_run_uses_miniflux_fetch_content_first(self) -> None:
         from miniflux_prompt_compiler import app as app_module
 

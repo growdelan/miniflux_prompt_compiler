@@ -1,4 +1,5 @@
 import json
+import socket
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -57,7 +58,12 @@ def fetch_entry_content(
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             payload = json.load(response)
-    except (urllib.error.URLError, json.JSONDecodeError) as exc:
+    except (
+        urllib.error.URLError,
+        TimeoutError,
+        socket.timeout,
+        json.JSONDecodeError,
+    ) as exc:
         raise ContentFetchError(
             f"Nie udalo sie pobrac tresci z Miniflux fetch-content: {exc}"
         ) from exc

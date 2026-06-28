@@ -114,3 +114,8 @@ Zakres: dodanie zaleznosci `trafilatura`, integracja konwersji i cleanupu w scie
 Cel: usuniecie z integracji Miniflux probnego requestu `PUT /v1/entries?status=read`, ktory generowal `400 Bad Request` przed poprawnym fallbackiem.
 Definition of Done: `mark_entry_read()` uzywa od razu oficjalnego `PUT /v1/entries` z payloadem `entry_ids` + `status`; nie wykonuje alternatywnych prob generujacych oczekiwane bledy; test jednostkowy weryfikuje metode, URL i body; pelny zestaw testow przechodzi.
 Zakres: adapter Miniflux HTTP, test kontraktu oznaczania `read`, PRD 003 oraz aktualizacja `spec.md`, `ROADMAP.md`, `STATUS.md` i README.
+
+## Milestone 23: Timeouty Miniflux fetch-content jako bledy domenowe (zrealizowany)
+Cel: timeout Miniflux `fetch-content` nie przerywa calego przebiegu i uruchamia istniejacy fallback Jina -> Playwright.
+Definition of Done: `TimeoutError` i `socket.timeout` z `fetch_entry_content()` sa mapowane na `ContentFetchError`; fallback po bledzie Minifluxa dziala zgodnie z dotychczasowym przeplywem; test jednostkowy potwierdza opakowanie timeoutu; pelny zestaw testow przechodzi.
+Zakres: adapter Miniflux HTTP oraz test kontraktu timeoutu `fetch-content`.
