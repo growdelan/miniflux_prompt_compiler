@@ -170,6 +170,11 @@ class TokenLabelTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             count_tokens("test", tokenizer="unknown")
 
+    def test_count_tokens_treats_special_token_text_as_regular_content(self) -> None:
+        count = count_tokens("before <|endoftext|> after", tokenizer="tiktoken")
+
+        self.assertGreater(count, 0)
+
 
 class PromptChunkingTest(unittest.TestCase):
     def test_build_prompts_with_chunking_splits_on_limit(self) -> None:
@@ -223,6 +228,107 @@ class PromptChunkingTest(unittest.TestCase):
 
 
 class InteractiveModeTest(unittest.TestCase):
+    def test_run_does_not_mark_entries_when_prompt_building_fails(self) -> None:
+        from miniflux_prompt_compiler import app as app_module
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text("MINIFLUX_API_TOKEN=abc123\n", encoding="utf-8")
+            marked: list[int] = []
+
+            with mock.patch.object(
+                app_module,
+                "build_prompts_with_chunking",
+                side_effect=ValueError("prompt failure"),
+            ):
+                with self.assertRaisesRegex(ValueError, "prompt failure"):
+                    run(
+                        env_path=env_path,
+                        environ={},
+                        fetcher=lambda base_url, token: [
+                            {
+                                "id": 1,
+                                "title": "Artykul",
+                                "url": "https://example.com/a",
+                            }
+                        ],
+                        article_fetcher=lambda entry_id, url: "content",
+                        marker=lambda base_url, token, entry_id: marked.append(entry_id),
+                        clipboard=lambda text: None,
+                        input_reader=lambda: None,
+                    )
+
+        self.assertEqual(marked, [])
+
+    def test_run_does_not_mark_item_skipped_by_chunking(self) -> None:
+        from miniflux_prompt_compiler import app as app_module
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text("MINIFLUX_API_TOKEN=abc123\n", encoding="utf-8")
+            marked: list[int] = []
+
+            def fake_chunker(items, *, skipped_items, **kwargs):  # type: ignore[no-untyped-def]
+                skipped_items.append(items[0])
+                return ["PROMPT"]
+
+            with mock.patch.object(
+                app_module,
+                "build_prompts_with_chunking",
+                side_effect=fake_chunker,
+            ):
+                with mock.patch.object(app_module, "count_tokens", return_value=10):
+                    run(
+                        env_path=env_path,
+                        environ={},
+                        fetcher=lambda base_url, token: [
+                            {
+                                "id": 1,
+                                "title": "Za duzy",
+                                "url": "https://example.com/large",
+                            },
+                            {
+                                "id": 2,
+                                "title": "Dostarczony",
+                                "url": "https://example.com/delivered",
+                            },
+                        ],
+                        article_fetcher=lambda entry_id, url: "content",
+                        marker=lambda base_url, token, entry_id: marked.append(entry_id),
+                        clipboard=lambda text: None,
+                        input_reader=lambda: None,
+                    )
+
+        self.assertEqual(marked, [2])
+
+    def test_run_does_not_mark_entries_when_clipboard_delivery_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            env_path = Path(tmpdir) / ".env"
+            env_path.write_text("MINIFLUX_API_TOKEN=abc123\n", encoding="utf-8")
+            marked: list[int] = []
+
+            def failing_clipboard(text: str) -> None:
+                raise RuntimeError("clipboard failure")
+
+            with self.assertRaisesRegex(RuntimeError, "clipboard failure"):
+                run(
+                    env_path=env_path,
+                    environ={},
+                    fetcher=lambda base_url, token: [
+                        {
+                            "id": 1,
+                            "title": "Artykul",
+                            "url": "https://example.com/a",
+                        }
+                    ],
+                    article_fetcher=lambda entry_id, url: "content",
+                    marker=lambda base_url, token, entry_id: marked.append(entry_id),
+                    clipboard=failing_clipboard,
+                    input_reader=lambda: None,
+                )
+
+        self.assertEqual(marked, [])
+
     def test_run_interactive_waits_for_enter_single_prompt(self) -> None:
         from miniflux_prompt_compiler import app as app_module
 

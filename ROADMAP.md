@@ -119,3 +119,8 @@ Zakres: adapter Miniflux HTTP, test kontraktu oznaczania `read`, PRD 003 oraz ak
 Cel: timeout Miniflux `fetch-content` nie przerywa calego przebiegu i uruchamia istniejacy fallback Jina -> Playwright.
 Definition of Done: `TimeoutError` i `socket.timeout` z `fetch_entry_content()` sa mapowane na `ContentFetchError`; fallback po bledzie Minifluxa dziala zgodnie z dotychczasowym przeplywem; test jednostkowy potwierdza opakowanie timeoutu; pelny zestaw testow przechodzi.
 Zakres: adapter Miniflux HTTP oraz test kontraktu timeoutu `fetch-content`.
+
+## Milestone 24: Odporna tokenizacja tresci zewnetrznej (zrealizowany)
+Cel: tresc artykulu zawierajaca tekst zgodny ze specjalnym tokenem `tiktoken` nie przerywa budowania promptu i nie powoduje przedwczesnego oznaczenia wpisow jako przeczytane.
+Definition of Done: `tiktoken` liczy specjalne sekwencje z tresci jako zwykly tekst; wpisy sa oznaczane jako `read` dopiero po pomyslnym zbudowaniu i dostarczeniu wyniku; testy regresyjne pokrywaja oba zachowania; pelny zestaw testow i rzeczywisty przebieg z `--playwright` przechodza.
+Zakres: tokenizacja, kolejnosc efektow ubocznych w orkiestracji, testy i dokumentacja.

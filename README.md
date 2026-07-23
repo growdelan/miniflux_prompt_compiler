@@ -37,7 +37,7 @@ Ekstrakcja artykulow:
 - potem Jina,
 - na koncu (opcjonalnie) Playwright po bledzie Jiny.
 
-Po udanym przetworzeniu wpis jest oznaczany jako `read` przez oficjalny endpoint Miniflux `PUT /v1/entries`.
+Po udanym zbudowaniu i dostarczeniu wyniku wpis jest oznaczany jako `read` przez oficjalny endpoint Miniflux `PUT /v1/entries`. Blad budowania promptu lub kopiowania pozostawia wpis jako `unread`; dotyczy to rowniez artykulow odrzuconych przez limit chunkowania. Tresc przypominajaca specjalne tokeny `tiktoken` jest bezpiecznie liczona jako zwykly tekst.
 
 Kontrola limitu tokenow i trybu liczenia:
 ```sh

@@ -9,7 +9,10 @@ ANSI_RED = "\033[31m"
 
 
 def build_prompts_with_chunking(
-    items: list[ProcessedItem], max_tokens: int, tokenizer: str = "auto"
+    items: list[ProcessedItem],
+    max_tokens: int,
+    tokenizer: str = "auto",
+    skipped_items: list[ProcessedItem] | None = None,
 ) -> list[str]:
     prompts: list[str] = []
     current: list[ProcessedItem] = []
@@ -34,6 +37,8 @@ def build_prompts_with_chunking(
         logging.info(
             "%sItem exceeds max token limit and was skipped%s", ANSI_RED, ANSI_RESET
         )
+        if skipped_items is not None:
+            skipped_items.append(item)
         current = []
 
     if current:
