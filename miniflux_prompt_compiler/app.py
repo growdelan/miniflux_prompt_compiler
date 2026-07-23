@@ -105,6 +105,42 @@ def collect_article_links(entry: MinifluxEntry) -> tuple[bool, str | None]:
     return True, url
 
 
+def entry_id_for_marking(entry: MinifluxEntry) -> int | None:
+    entry_id_raw = entry.get("id")
+    if entry_id_raw is None:
+        logging.info("Brak ID wpisu, pomijam oznaczanie jako read.")
+        return None
+    try:
+        entry_id = int(entry_id_raw)
+    except (TypeError, ValueError):
+        logging.info(
+            "Niepoprawny ID wpisu (%s), pomijam oznaczanie jako read.",
+            entry_id_raw,
+        )
+        return None
+    if entry_id <= 0:
+        logging.info(
+            "Niepoprawny ID wpisu (%s), pomijam oznaczanie jako read.",
+            entry_id_raw,
+        )
+        return None
+    return entry_id
+
+
+def mark_processed_entries(
+    base_url: str,
+    token: str,
+    entry_ids: list[int],
+    marker: Callable[[str, str, int], None],
+) -> None:
+    for entry_id in entry_ids:
+        try:
+            marker(base_url, token, entry_id)
+            logging.info("Oznaczono jako read: %s", entry_id)
+        except RuntimeError as exc:
+            logging.info("Blad oznaczania read: %s", exc)
+
+
 def run(
     env_path: Path = Path(".env"),
     environ: dict[str, str] | None = None,
@@ -167,7 +203,9 @@ def run(
     failed = 0
     skipped = 0
     processed_items: list[ProcessedItem] = []
+    processed_item_entry_ids: list[int | None] = []
     collected_links: list[str] = []
+    processed_entry_ids: list[int] = []
     for entry in entries:
         if links_only:
             processed, link = collect_article_links(entry)
@@ -187,33 +225,14 @@ def run(
                 continue
 
         if processed:
-            entry_id_raw = entry.get("id")
-            if entry_id_raw is None:
-                logging.info("Brak ID wpisu, pomijam oznaczanie jako read.")
-            else:
-                try:
-                    entry_id = int(entry_id_raw)
-                except (TypeError, ValueError):
-                    logging.info(
-                        "Niepoprawny ID wpisu (%s), pomijam oznaczanie jako read.",
-                        entry_id_raw,
-                    )
-                else:
-                    if entry_id <= 0:
-                        logging.info(
-                            "Niepoprawny ID wpisu (%s), pomijam oznaczanie jako read.",
-                            entry_id_raw,
-                        )
-                    else:
-                        try:
-                            marker(resolved_base_url, token, entry_id)
-                            logging.info("Oznaczono jako read: %s", entry_id)
-                        except RuntimeError as exc:
-                            logging.info("Blad oznaczania read: %s", exc)
+            entry_id = entry_id_for_marking(entry)
             logging.info("Sukces")
             success += 1
             if item is not None:
                 processed_items.append(item)
+                processed_item_entry_ids.append(entry_id)
+            elif entry_id is not None:
+                processed_entry_ids.append(entry_id)
         else:
             skipped += 1
 
@@ -235,11 +254,24 @@ def run(
             logging.info("Copied links (%s)", len(collected_links))
         else:
             print(links_output)
+        mark_processed_entries(
+            resolved_base_url, token, processed_entry_ids, marker
+        )
         return f"{summary}; Links: {len(collected_links)}"
 
     full_prompt = build_prompt(processed_items)
+    skipped_prompt_items: list[ProcessedItem] = []
     prompts = build_prompts_with_chunking(
-        processed_items, max_tokens=max_tokens, tokenizer=tokenizer
+        processed_items,
+        max_tokens=max_tokens,
+        tokenizer=tokenizer,
+        skipped_items=skipped_prompt_items,
+    )
+    skipped_prompt_item_ids = {id(item) for item in skipped_prompt_items}
+    processed_entry_ids.extend(
+        entry_id
+        for item, entry_id in zip(processed_items, processed_item_entry_ids)
+        if entry_id is not None and id(item) not in skipped_prompt_item_ids
     )
     summary = (
         f"Unread entries: {len(entries)}; Success: {success}; "
@@ -268,6 +300,9 @@ def run(
             label = label_for_tokens(token_count)
             print(f"Prompt 1/1 ({token_count} tokenow - {color_label(label)})")
             print(prompts[0])
+        mark_processed_entries(
+            resolved_base_url, token, processed_entry_ids, marker
+        )
         return f"{summary}; Tokens: {total_tokens}; Label: {total_label}"
 
     logging.info("Total tokens: %s -> %s", total_tokens, color_label(total_label))
@@ -296,6 +331,8 @@ def run(
                 f"({token_count} tokenow - {color_label(label)})"
             )
             print(prompt)
+
+    mark_processed_entries(resolved_base_url, token, processed_entry_ids, marker)
 
     return (
         f"{summary}; Prompts: {len(prompts)}; "

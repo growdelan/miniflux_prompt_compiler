@@ -23,7 +23,7 @@ def count_tokens(text: str, tokenizer: str = "auto") -> int:
             logging.info("Tokenizer: approx (fallback, wynik szacunkowy)")
             return max(1, len(text) // 4)
         encoding = tiktoken.get_encoding("cl100k_base")
-        return len(encoding.encode(text))
+        return len(encoding.encode(text, disallowed_special=()))
 
     logging.info("Tokenizer: approx (wynik szacunkowy)")
     return max(1, len(text) // 4)
