@@ -14,7 +14,7 @@ Aplikacja CLI w Pythonie pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekst
    - YouTube: `youtube_transcript_api` z preferencją `en`, bez timestampów; brak transkrypcji to porażka.
 6. Sukcesy trafiają do promptu, porażki są logowane i pozostają jako `unread`.
 7. Po pomyslnym zbudowaniu i dostarczeniu wyniku uwzglednione w nim wpisy sa oznaczane jako `read` przez oficjalny endpoint Miniflux `PUT /v1/entries` z payloadem `entry_ids` + `status`. Blad budowania promptu, schowka lub odrzucenie wpisu podczas chunkowania pozostawia wpis jako `unread`.
-8. Prompt jest liczony tokenowo, etykietowany i w razie potrzeby dzielony na chunki na granicy calych artykulow.
+8. Prompt przekazuje modelowi tytuł, bezpośredni URL z wpisu Miniflux i treść każdego materiału. Wynik dla każdego materiału ma format: tytuł, link, a następnie maksymalnie pięć punktów podsumowania. Prompt jest liczony tokenowo, etykietowany i w razie potrzeby dzielony na chunki na granicy calych artykulow.
 9. Finalne prompty sa kopiowane do schowka macOS w trybie interaktywnym dopiero po Enter (rowniez gdy jest tylko jeden prompt); w trybie nieinteraktywnym trafiaja do stdout. W trybie `--links` ta sama logika dostarczenia wyniku dotyczy jednego bloku tekstu zawierającego same URL-e.
 10. Etykiety na podstawie liczby tokenow:
    - < 32 000: `GPT-Instant`
@@ -26,7 +26,7 @@ Aplikacja CLI w Pythonie pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekst
 - Orkiestracja: `miniflux_prompt_compiler/app.py` (przeplyw, `run()`, `process_entry()`, oraz sciezka links-only).
 - Core (bez I/O): `miniflux_prompt_compiler/core/` (prompt, tokeny, chunking, klasyfikacja URL, ewentualne filtrowanie i skladanie listy URL-i).
 - Adapters (I/O): `miniflux_prompt_compiler/adapters/` (Miniflux HTTP, Jina, Playwright, YouTube, clipboard oraz ekstrakcja markdown z HTML przez `trafilatura`).
-- Kontrakty danych: `miniflux_prompt_compiler/types.py` (`MinifluxEntry`, `ProcessedItem`).
+- Kontrakty danych: `miniflux_prompt_compiler/types.py` (`MinifluxEntry`, `ProcessedItem`; przetworzony element zachowuje tytuł, URL z Miniflux i treść).
 - Konfiguracja: `miniflux_prompt_compiler/config.py` (wczytywanie `.env`).
 
 ## Uwagi implementacyjne

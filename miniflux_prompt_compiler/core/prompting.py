@@ -44,6 +44,7 @@ Odbiorcą jest osoba czytająca szybko, skanująca treść i oczekująca konkret
 Dla każdego artykułu użyj formatu:
 
 **Tytuł:** <tytuł artykułu lub krótki opis tematu>
+**Link:** <bezpośredni link do artykułu przekazany w polu Link>
 
 - <najważniejszy insight z artykułu; uwzględnij konkret, liczbę, przykład lub porównanie, jeśli występuje>
 - <drugi najważniejszy punkt>
@@ -61,6 +62,7 @@ Zasady formatu:
 Jeśli artykuł jest mało konkretny, zamiast standardowej listy napisz:
 
 **Tytuł:** <tytuł artykułu lub krótki opis tematu>
+**Link:** <bezpośredni link do artykułu przekazany w polu Link>
 
 Ten artykuł jest mało konkretny, bo:
 - <powód 1>
@@ -79,8 +81,9 @@ def build_prompt(items: list[ProcessedItem]) -> str:
     sections: list[str] = []
     for item in items:
         title = item.title
+        url = item.url
         content = item.content
-        section = f"---\n\nTytuł: {title}\nTreść:\n{content}"
+        section = f"---\n\nTytuł: {title}\nLink: {url}\nTreść:\n{content}"
         sections.append(section)
     items_block = "\n\n".join(sections)
     return (

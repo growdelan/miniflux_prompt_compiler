@@ -124,3 +124,8 @@ Zakres: adapter Miniflux HTTP oraz test kontraktu timeoutu `fetch-content`.
 Cel: tresc artykulu zawierajaca tekst zgodny ze specjalnym tokenem `tiktoken` nie przerywa budowania promptu i nie powoduje przedwczesnego oznaczenia wpisow jako przeczytane.
 Definition of Done: `tiktoken` liczy specjalne sekwencje z tresci jako zwykly tekst; wpisy sa oznaczane jako `read` dopiero po pomyslnym zbudowaniu i dostarczeniu wyniku; testy regresyjne pokrywaja oba zachowania; pelny zestaw testow i rzeczywisty przebieg z `--playwright` przechodza.
 Zakres: tokenizacja, kolejnosc efektow ubocznych w orkiestracji, testy i dokumentacja.
+
+## Milestone 25: Link artykułu w podsumowaniu GPT (zrealizowany)
+Cel: wyświetlać bezpośredni URL z wpisu Miniflux między tytułem a podsumowaniem każdego materiału.
+Definition of Done: URL jest zachowany w `ProcessedItem`, przekazany w danych wejściowych promptu i wymagany w formacie odpowiedzi dla artykułów oraz materiałów YouTube; testy potwierdzają przepływ i kolejność pól.
+Zakres: kontrakt przetworzonego elementu, orkiestracja, builder promptu, testy i dokumentacja zachowania.
