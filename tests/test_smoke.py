@@ -85,6 +85,8 @@ class SmokeTest(unittest.TestCase):
         self.assertEqual(marked, [1, 2])
         self.assertEqual(len(clipboard_values), 1)
         self.assertIn("Tytuł: Artykul", clipboard_values[0])
+        self.assertIn("Link: https://example.com/a", clipboard_values[0])
+        self.assertIn("Link: https://youtu.be/abc123", clipboard_values[0])
         self.assertIn("Treść:\ncontent", clipboard_values[0])
         self.assertEqual(captured_base_urls, ["http://miniflux.local"])
 
@@ -143,17 +145,30 @@ class PromptBuildTest(unittest.TestCase):
     def test_build_prompt_wraps_items(self) -> None:
         prompt = build_prompt(
             [
-                ProcessedItem(title="Artykul", content="Tresc A"),
-                ProcessedItem(title="Video", content="Tresc B"),
+                ProcessedItem(
+                    title="Artykul", url="https://example.com/a", content="Tresc A"
+                ),
+                ProcessedItem(
+                    title="Video", url="https://youtu.be/abc123", content="Tresc B"
+                ),
             ]
         )
 
         self.assertIn("<lista_artykułów_i_transkrypcji>", prompt)
         self.assertIn("</lista_artykułów_i_transkrypcji>", prompt)
-        self.assertIn("Tytuł: Artykul", prompt)
-        self.assertIn("Treść:\nTresc A", prompt)
-        self.assertIn("Tytuł: Video", prompt)
-        self.assertIn("Treść:\nTresc B", prompt)
+        self.assertIn(
+            "Tytuł: Artykul\nLink: https://example.com/a\nTreść:\nTresc A",
+            prompt,
+        )
+        self.assertIn(
+            "Tytuł: Video\nLink: https://youtu.be/abc123\nTreść:\nTresc B",
+            prompt,
+        )
+        self.assertIn(
+            "**Tytuł:** <tytuł artykułu lub krótki opis tematu>\n"
+            "**Link:** <bezpośredni link do artykułu przekazany w polu Link>",
+            prompt,
+        )
 
 
 class TokenLabelTest(unittest.TestCase):
@@ -181,9 +196,9 @@ class PromptChunkingTest(unittest.TestCase):
         from miniflux_prompt_compiler.core import chunking
 
         items = [
-            ProcessedItem(title="A", content="X"),
-            ProcessedItem(title="B", content="Y"),
-            ProcessedItem(title="C", content="Z"),
+            ProcessedItem(title="A", url="https://example.com/a", content="X"),
+            ProcessedItem(title="B", url="https://example.com/b", content="Y"),
+            ProcessedItem(title="C", url="https://example.com/c", content="Z"),
         ]
 
         def fake_build_prompt(current):  # type: ignore[no-untyped-def]
@@ -202,9 +217,9 @@ class PromptChunkingTest(unittest.TestCase):
         from miniflux_prompt_compiler.core import chunking
 
         items = [
-            ProcessedItem(title="A", content="X"),
-            ProcessedItem(title="BIG", content="Y"),
-            ProcessedItem(title="B", content="Z"),
+            ProcessedItem(title="A", url="https://example.com/a", content="X"),
+            ProcessedItem(title="BIG", url="https://example.com/big", content="Y"),
+            ProcessedItem(title="B", url="https://example.com/b", content="Z"),
         ]
 
         def fake_build_prompt(current):  # type: ignore[no-untyped-def]

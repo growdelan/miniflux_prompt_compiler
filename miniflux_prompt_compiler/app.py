@@ -74,7 +74,7 @@ def process_entry(
             return False, None
         logging.info("Typ: YouTube")
         content = youtube_fetcher(video_id)
-        return True, ProcessedItem(title=title, content=content)
+        return True, ProcessedItem(title=title, url=url, content=content)
 
     logging.info("Typ: artykul")
     content_result = article_fetcher(entry_id, url)
@@ -85,7 +85,7 @@ def process_entry(
         content = content_result
     if source == "miniflux":
         content = html_to_clean_markdown(title=title, html=content)
-    return True, ProcessedItem(title=title, content=content)
+    return True, ProcessedItem(title=title, url=url, content=content)
 
 
 def collect_article_links(entry: MinifluxEntry) -> tuple[bool, str | None]:

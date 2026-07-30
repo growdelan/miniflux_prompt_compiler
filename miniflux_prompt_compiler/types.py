@@ -11,6 +11,7 @@ class MinifluxEntry(TypedDict, total=False):
 @dataclass
 class ProcessedItem:
     title: str
+    url: str
     content: str
 
 
