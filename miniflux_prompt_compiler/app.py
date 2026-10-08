@@ -207,6 +207,14 @@ def run(
     collected_links: list[str] = []
     processed_entry_ids: list[int] = []
     for entry in entries:
+        url = (entry.get("url") or "").strip()
+        if is_youtube_shorts(url):
+            logging.info("Pomijam treść YouTube Shorts; oznaczam wpis jako read.")
+            entry_id = entry_id_for_marking(entry)
+            if entry_id is not None:
+                mark_processed_entries(resolved_base_url, token, [entry_id], marker)
+            skipped += 1
+            continue
         if links_only:
             processed, link = collect_article_links(entry)
             item = None

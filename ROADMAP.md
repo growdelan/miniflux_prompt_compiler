@@ -129,3 +129,8 @@ Zakres: tokenizacja, kolejnosc efektow ubocznych w orkiestracji, testy i dokumen
 Cel: wyświetlać bezpośredni URL z wpisu Miniflux między tytułem a podsumowaniem każdego materiału.
 Definition of Done: URL jest zachowany w `ProcessedItem`, przekazany w danych wejściowych promptu i wymagany w formacie odpowiedzi dla artykułów oraz materiałów YouTube; testy potwierdzają przepływ i kolejność pól.
 Zakres: kontrakt przetworzonego elementu, orkiestracja, builder promptu, testy i dokumentacja zachowania.
+
+## Milestone 26: Automatyczne oznaczanie YouTube Shorts jako read (zrealizowany)
+Cel: pomijane shortsy nie pozostają na liście unread w Miniflux.
+Definition of Done: shortsy są oznaczane jako `read` bez ekstrakcji i bez oczekiwania na dostarczenie promptu, również w `--links` i przy liście samych shortsów; błędne ID i błędy API nie przerywają przebiegu; pozostałe wpisy zachowują dotychczasowe reguły; testy regresyjne przechodzą.
+Zakres: rozpoznawanie URL-i Shorts, orkiestracja, testy, dokumentacja i wydanie 1.6.4.

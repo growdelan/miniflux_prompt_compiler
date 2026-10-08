@@ -9,7 +9,7 @@ def is_youtube_url(url: str) -> bool:
 
 def is_youtube_shorts(url: str) -> bool:
     parsed = urlparse(url)
-    return "/shorts/" in parsed.path
+    return is_youtube_url(url) and parsed.path.startswith("/shorts/")
 
 
 def extract_youtube_id(url: str) -> str | None:

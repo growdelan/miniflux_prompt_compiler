@@ -39,6 +39,8 @@ Ekstrakcja artykulow:
 
 Po udanym zbudowaniu i dostarczeniu wyniku wpis jest oznaczany jako `read` przez oficjalny endpoint Miniflux `PUT /v1/entries`. Blad budowania promptu lub kopiowania pozostawia wpis jako `unread`; dotyczy to rowniez artykulow odrzuconych przez limit chunkowania. Tresc przypominajaca specjalne tokeny `tiktoken` jest bezpiecznie liczona jako zwykly tekst. Podsumowanie GPT dla każdego materiału zawiera tytuł, bezpośredni URL z wpisu Miniflux, a następnie maksymalnie pięć punktów.
 
+YouTube Shorts (linki YouTube ze ścieżką `/shorts/`) są automatycznie oznaczane jako `read` po wykryciu, bez pobierania treści i dodawania do promptu. Dotyczy to również `--links` oraz listy zawierającej wyłącznie shortsy i nie wymaga Enter ani dostarczenia wyniku. Błędne ID lub błąd oznaczania są logowane; aplikacja kontynuuje przetwarzanie pozostałych wpisów.
+
 Kontrola limitu tokenow i trybu liczenia:
 ```sh
 uv run main.py --max-tokens 50000 --tokenizer auto

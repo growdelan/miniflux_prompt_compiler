@@ -1,3 +1,4 @@
+import http.client
 import json
 import socket
 import urllib.error
@@ -41,7 +42,7 @@ def mark_entry_read(
     try:
         with urllib.request.urlopen(request, timeout=timeout):
             return
-    except (urllib.error.HTTPError, urllib.error.URLError) as exc:
+    except (urllib.error.URLError, TimeoutError, http.client.HTTPException) as exc:
         raise MinifluxError(
             f"Nie udalo sie oznaczyc wpisu {entry_id} jako read: {exc}"
         ) from exc
