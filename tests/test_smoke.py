@@ -1,3 +1,4 @@
+import http.client
 import io
 import re
 import tempfile
@@ -82,7 +83,7 @@ class SmokeTest(unittest.TestCase):
         )
         self.assertRegex(output, r"Tokens: \d+")
         self.assertIn("Label: GPT-Instant", output)
-        self.assertEqual(marked, [1, 2])
+        self.assertEqual(marked, [3, 1, 2])
         self.assertEqual(len(clipboard_values), 1)
         self.assertIn("Tytuł: Artykul", clipboard_values[0])
         self.assertIn("Link: https://example.com/a", clipboard_values[0])
@@ -123,6 +124,143 @@ class MarkReadTest(unittest.TestCase):
         )
 
 
+class ShortsAutoReadTest(unittest.TestCase):
+    def test_only_shorts_are_marked_without_extraction_or_delivery(self) -> None:
+        for links_only in (False, True):
+            for interactive in (False, True):
+                with self.subTest(links_only=links_only, interactive=interactive):
+                    marker = mock.Mock()
+                    forbidden = mock.Mock(side_effect=AssertionError("Nieoczekiwane I/O"))
+                    buffer = io.StringIO()
+                    with redirect_stdout(buffer):
+                        output = run(
+                            env_path=Path("/nonexistent/.env"),
+                            environ={"MINIFLUX_API_TOKEN": "test-token"},
+                            base_url="http://miniflux.test",
+                            fetcher=lambda *_: [
+                                {"id": 1, "url": "https://youtube.com/shorts/abc"},
+                                {"id": "2", "url": " https://www.youtube.com/shorts/xyz?feature=share "},
+                            ],
+                            article_fetcher=forbidden,
+                            youtube_fetcher=forbidden,
+                            marker=marker,
+                            clipboard=forbidden,
+                            input_reader=forbidden,
+                            links_only=links_only,
+                            interactive=interactive,
+                        )
+                    self.assertEqual(marker.call_args_list, [
+                        mock.call("http://miniflux.test", "test-token", 1),
+                        mock.call("http://miniflux.test", "test-token", 2),
+                    ])
+                    forbidden.assert_not_called()
+                    self.assertEqual(buffer.getvalue(), "")
+                    self.assertEqual(output, "Unread entries: 2; Success: 0; Failed: 0; Skipped: 2")
+
+    def test_shorts_are_marked_even_when_clipboard_fails(self) -> None:
+        for links_only in (False, True):
+            with self.subTest(links_only=links_only):
+                marker = mock.Mock()
+                clipboard = mock.Mock(side_effect=RuntimeError("clipboard failed"))
+                with self.assertRaisesRegex(RuntimeError, "clipboard failed"):
+                    run(
+                        env_path=Path("/nonexistent/.env"),
+                        environ={"MINIFLUX_API_TOKEN": "test-token"},
+                        base_url="http://miniflux.test",
+                        fetcher=lambda *_: [
+                            {"id": 1, "url": "https://example.com/article"},
+                            {"id": 2, "url": "https://youtube.com/shorts/abc"},
+                        ],
+                        article_fetcher=lambda *_: "Article content",
+                        marker=marker,
+                        clipboard=clipboard,
+                        input_reader=lambda: "",
+                        tokenizer="approx",
+                        links_only=links_only,
+                    )
+                marker.assert_called_once_with("http://miniflux.test", "test-token", 2)
+                self.assertNotIn("shorts", clipboard.call_args.args[0])
+
+    def test_invalid_short_ids_do_not_trigger_marking(self) -> None:
+        marker = mock.Mock()
+        with self.assertLogs(level="INFO") as logs:
+            output = run(
+                env_path=Path("/nonexistent/.env"),
+                environ={"MINIFLUX_API_TOKEN": "test-token"},
+                fetcher=lambda *_: [
+                    {"id": entry_id, "url": "https://youtube.com/shorts/abc"}
+                    for entry_id in (None, "bad", 0, -1)
+                ],
+                marker=marker,
+            )
+        marker.assert_not_called()
+        self.assertIn("Skipped: 4", output)
+        self.assertIn("pomijam oznaczanie jako read", "\n".join(logs.output))
+
+    def test_marker_failure_does_not_stop_other_entries(self) -> None:
+        from miniflux_prompt_compiler.types import MinifluxError
+
+        for links_only in (False, True):
+            with self.subTest(links_only=links_only):
+                marker = mock.Mock(side_effect=[MinifluxError("API failed"), None, None])
+                with self.assertLogs(level="INFO") as logs, redirect_stdout(io.StringIO()):
+                    output = run(
+                        env_path=Path("/nonexistent/.env"),
+                        environ={"MINIFLUX_API_TOKEN": "test-token"},
+                        base_url="http://miniflux.test",
+                        fetcher=lambda *_: [
+                            {"id": 1, "url": "https://youtube.com/shorts/abc"},
+                            {"id": 2, "url": "https://youtube.com/shorts/xyz"},
+                            {"id": 3, "url": "https://example.com/shorts/article"},
+                        ],
+                        article_fetcher=lambda *_: "Article content",
+                        marker=marker,
+                        interactive=False,
+                        links_only=links_only,
+                        tokenizer="approx",
+                    )
+                self.assertEqual([call.args[2] for call in marker.call_args_list], [1, 2, 3])
+                self.assertIn("Success: 1; Failed: 0; Skipped: 2", output)
+                self.assertIn("Blad oznaczania read: API failed", "\n".join(logs.output))
+
+    def test_mark_entry_read_wraps_timeouts(self) -> None:
+        from miniflux_prompt_compiler.adapters.miniflux_http import mark_entry_read
+        from miniflux_prompt_compiler.types import MinifluxError
+
+        with mock.patch("urllib.request.urlopen", side_effect=TimeoutError("timeout")):
+            with self.assertRaises(MinifluxError):
+                mark_entry_read("http://miniflux.test", "test-token", 1)
+
+    def test_disconnected_marker_does_not_stop_other_entries(self) -> None:
+        for links_only in (False, True):
+            with self.subTest(links_only=links_only):
+                response = mock.MagicMock()
+                with mock.patch("urllib.request.urlopen", side_effect=[
+                    http.client.RemoteDisconnected("connection closed"), response,
+                ]) as urlopen, self.assertLogs(level="INFO") as logs:
+                    clipboard = mock.Mock()
+                    output = run(
+                        env_path=Path("/nonexistent/.env"),
+                        environ={"MINIFLUX_API_TOKEN": "test-token"},
+                        base_url="http://miniflux.test",
+                        fetcher=lambda *_: [
+                            {"id": 1, "url": "https://youtube.com/shorts/abc"},
+                            {"id": 2, "url": "https://example.com/article"},
+                        ],
+                        article_fetcher=lambda *_: "Article content",
+                        clipboard=clipboard,
+                        input_reader=lambda: "",
+                        links_only=links_only,
+                        tokenizer="approx",
+                    )
+                self.assertEqual(urlopen.call_count, 2)
+                self.assertEqual(urlopen.call_args_list[1].args[0].data,
+                                 b'{"entry_ids": [2], "status": "read"}')
+                clipboard.assert_called_once()
+                self.assertIn("Success: 1; Failed: 0; Skipped: 1", output)
+                self.assertIn("connection closed", "\n".join(logs.output))
+
+
 class ClassificationTest(unittest.TestCase):
     def test_youtube_detection_and_shorts(self) -> None:
         self.assertTrue(is_youtube_url("https://youtube.com/watch?v=abc"))
@@ -132,6 +270,8 @@ class ClassificationTest(unittest.TestCase):
 
         self.assertTrue(is_youtube_shorts("https://www.youtube.com/shorts/xyz"))
         self.assertFalse(is_youtube_shorts("https://www.youtube.com/watch?v=xyz"))
+        self.assertFalse(is_youtube_shorts("https://example.com/shorts/xyz"))
+        self.assertFalse(is_youtube_shorts("https://youtube.com/other/shorts/xyz"))
 
     def test_extract_youtube_id(self) -> None:
         self.assertEqual(

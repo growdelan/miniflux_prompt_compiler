@@ -1,19 +1,19 @@
 # Specyfikacja techniczna
 
 ## Cel
-Aplikacja CLI w Pythonie pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekstraktuje treść artykułów lub transkrypcje YouTube, składa prompt (lub wiele promptow przy przekroczeniu limitu tokenow), kopiuje je do schowka macOS w trybie interaktywnym i oznacza jako przeczytane tylko wpisy przetworzone z sukcesem. Dla artykułów pobranych z Miniflux `fetch-content` aplikacja normalizuje HTML do markdown przez `trafilatura` i czyści wynik z portalowego noise. Dodatkowo wspiera opcjonalny fallback Playwright dla artykułów, uruchamiany tylko po błędzie Jiny i po włączeniu flagi CLI. Osobny tryb `--links` zwraca wyłącznie URL-e wpisów artykułowych (nie-YouTube), bez próby pozyskiwania treści.
+Aplikacja CLI w Pythonie pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekstraktuje treść artykułów lub transkrypcje YouTube, składa prompt (lub wiele promptow przy przekroczeniu limitu tokenow), kopiuje je do schowka macOS w trybie interaktywnym i oznacza jako przeczytane wpisy przetworzone z sukcesem oraz pomijane YouTube Shorts. Dla artykułów pobranych z Miniflux `fetch-content` aplikacja normalizuje HTML do markdown przez `trafilatura` i czyści wynik z portalowego noise. Dodatkowo wspiera opcjonalny fallback Playwright dla artykułów, uruchamiany tylko po błędzie Jiny i po włączeniu flagi CLI. Osobny tryb `--links` zwraca wyłącznie URL-e wpisów artykułowych (nie-YouTube), bez próby pozyskiwania treści.
 
 ## Architektura i przepływ danych
 1. Wczytanie konfiguracji: `MINIFLUX_API_TOKEN` z `.env`/ENV; `base_url` rozstrzygany w kolejnosci: CLI `--base-url` → env `MINIFLUX_BASE_URL` → `.env` → domyslny fallback (logowany).
 2. Pobranie listy `unread` wpisów z Miniflux, zachowanie kolejności.
-3. Klasyfikacja linków: YouTube (youtube.com, youtu.be) z pominięciem `/shorts/`; pozostałe to artykuły.
+3. Klasyfikacja linków: YouTube (youtube.com, www.youtube.com, youtu.be); pozostałe to artykuły. YouTube Shorts (ścieżka zaczynająca się od `/shorts/` na rozpoznanym hoście YouTube) są pomijane bez ekstrakcji i natychmiast oznaczane jako `read`, niezależnie od trybu, obecności innych wpisów i dostarczenia wyniku. Brak poprawnego ID lub błąd API jest logowany i nie przerywa przebiegu.
 4. Tryb `--links`: po klasyfikacji aplikacja filtruje wpisy do artykułów, buduje wynik zawierający same URL-e (po jednym na linię), pomija ekstrakcję treści, liczenie tokenów i chunkowanie, a wpisy uwzględnione w wyniku są traktowane jako sukces.
 5. Domyślny tryb ekstrakcji treści (bez `--links`):
    - Artykuły: najpierw `GET /v1/entries/{entryID}/fetch-content?update_content=true` (Miniflux); przy sukcesie odpowiedź HTML jest konwertowana przez `trafilatura` do markdown i czyszczona z powtarzalnego noise, a wynik ma format `# {title}` + treść. Przy błędzie lub pustej treści fallback do `https://r.jina.ai/<URL>` (maks. 3 retry, timeout 10–15 s).
    - Fallback (opcjonalnie): Playwright uruchamiany tylko dla artykułów, gdy Jina rzuci wyjątek lub zwróci pustą treść, i tylko przy fladze `--playwright` (1 próba, timeout 20 s, headless).
    - YouTube: `youtube_transcript_api` z preferencją `en`, bez timestampów; brak transkrypcji to porażka.
 6. Sukcesy trafiają do promptu, porażki są logowane i pozostają jako `unread`.
-7. Po pomyslnym zbudowaniu i dostarczeniu wyniku uwzglednione w nim wpisy sa oznaczane jako `read` przez oficjalny endpoint Miniflux `PUT /v1/entries` z payloadem `entry_ids` + `status`. Blad budowania promptu, schowka lub odrzucenie wpisu podczas chunkowania pozostawia wpis jako `unread`.
+7. Po pomyslnym zbudowaniu i dostarczeniu wyniku uwzglednione w nim wpisy sa oznaczane jako `read` przez oficjalny endpoint Miniflux `PUT /v1/entries` z payloadem `entry_ids` + `status`. Blad budowania promptu, schowka lub odrzucenie wpisu podczas chunkowania pozostawia wpis jako `unread`. Wyjątkiem są świadomie odrzucane YouTube Shorts oznaczane po wykryciu (punkt 3).
 8. Prompt przekazuje modelowi tytuł, bezpośredni URL z wpisu Miniflux i treść każdego materiału. Wynik dla każdego materiału ma format: tytuł, link, a następnie maksymalnie pięć punktów podsumowania. Prompt jest liczony tokenowo, etykietowany i w razie potrzeby dzielony na chunki na granicy calych artykulow.
 9. Finalne prompty sa kopiowane do schowka macOS w trybie interaktywnym dopiero po Enter (rowniez gdy jest tylko jeden prompt); w trybie nieinteraktywnym trafiaja do stdout. W trybie `--links` ta sama logika dostarczenia wyniku dotyczy jednego bloku tekstu zawierającego same URL-e.
 10. Etykiety na podstawie liczby tokenow:
@@ -40,6 +40,7 @@ Aplikacja CLI w Pythonie pobiera wszystkie nieprzeczytane wpisy z Miniflux, ekst
 - Sekwencje odpowiadajace specjalnym tokenom `tiktoken`, pochodzace z tresci zewnetrznej, sa liczone jako zwykly tekst i nie przerywaja budowania promptu.
 
 ## Decyzje techniczne
+- YouTube Shorts są oznaczane jako `read` bez dostarczenia wyniku, ponieważ użytkownik nie chce zachowywać ich na liście unread. Korzystają z istniejącego markera i walidacji ID; timeout i błędy odpowiedzi protokołu HTTP podczas oznaczania są błędami domenowymi `MinifluxError`. W statystykach pozostają `Skipped`, ponieważ nie generują treści (Milestone 26).
 - Priorytetem dla artykulow jest Miniflux `fetch-content`; dopiero przy bledzie lub pustej tresci uruchamiany jest fallback Jina, a nastepnie (opcjonalnie) Playwright.
 - Tryb `--links` zwraca wyłącznie URL-e wpisów sklasyfikowanych jako artykuły (nie-YouTube) i nie uruchamia żadnego mechanizmu pozyskiwania treści ani transkrypcji (dotyczy PRD: `001-links-only-mode-prd.md`).
 - Dla sukcesu Miniflux `fetch-content` odpowiedź HTML jest normalizowana do markdown przez `trafilatura` i czyszczona z portalowego noise; fallbacki Jina/Playwright pozostają bez tej normalizacji (dotyczy PRD: `002-trafilatura-miniflux-markdown-cleanup-prd.md`).
